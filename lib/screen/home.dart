@@ -76,6 +76,38 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void goToManagementPage(String machineid, String ip_address) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => MachineManagement(
+              machineid: machineid,
+              ipValue: ip_address,
+              sshClient: sshClient!,
+            ),
+      ),
+    );
+  }
+
+  void goToFormPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AddMachineForm(
+              machinelist: machinelist,
+              sshClient: sshClient!,
+              database: widget.database,
+            ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        _loadMachines();
+      }
+    });
+  }
+
   @override
   void dispose() {
     sshClient?.close();
@@ -169,23 +201,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                             ),
                                       );
                                     },
-
                                     child: FloatingActionButton(
                                       onPressed: () {
                                         if (sshClient != null) {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (context) =>
-                                                      MachineManagement(
-                                                        machineid:
-                                                            machine.machineid,
-                                                        ipValue:
-                                                            machine.ip_address,
-                                                        sshClient: sshClient!,
-                                                      ),
-                                            ),
+                                          goToManagementPage(
+                                            machine.machineid,
+                                            machine.ip_address,
                                           );
                                         } else {
                                           ScaffoldMessenger.of(
@@ -233,21 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           if (sshClient != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => AddMachineForm(
-                      machinelist: machinelist,
-                      sshClient: sshClient!,
-                      database: widget.database,
-                    ),
-              ),
-            ).then((result) {
-              if (result == true) {
-                _loadMachines();
-              }
-            });
+            goToFormPage();
           }
         },
         tooltip: 'Aggiungi',
