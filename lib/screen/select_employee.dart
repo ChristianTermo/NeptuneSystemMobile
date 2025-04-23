@@ -6,12 +6,14 @@ class SelectEmployee extends StatefulWidget {
   final SSHClient? sshClient;
   final String ipValue;
   final String machineid;
+  final dynamic selectedDevice;
 
   const SelectEmployee({
     super.key,
     required this.sshClient,
     required this.ipValue,
     required this.machineid,
+    required this.selectedDevice,
   });
   @override
   State<StatefulWidget> createState() => SelectEmployeeState();
@@ -39,6 +41,53 @@ class SelectEmployeeState extends State<SelectEmployee> {
       final session = await widget.sshClient!.execute(
         'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEmployee',
       );
+
+      final result = await session.stdout.map(utf8.decode).join();
+      final parts = result.split("HTTP_CODE:");
+      final body = parts[0].trim();
+      final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
+
+      print("📡 HTTP Code: $httpCode");
+      print("📜 Body: $body");
+
+      if (httpCode == '200') {
+        setState(() {
+          employees = json.decode(body);
+          filteredEmployee = employees;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = "Macchina non raggiungibile";
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Errore di connessione: $e";
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> retreat() async {
+    try {
+      final payload = '''
+{
+  "deviceId": ${widget.selectedDevice["DeviceId"]},
+  "employeeId": "${widget.selectedDevice["EmployeeAssociated"]}",
+  "isAssistant": true
+}
+''';
+
+      final curlCommand = '''
+curl -s -X POST -H "Content-Type: application/json" \
+-d '$payload' \
+-w "HTTP_CODE:%{http_code}" \
+http://${widget.ipValue}:8080/api/receive/devices
+''';
+
+      final session = await widget.sshClient!.execute(curlCommand);
 
       final result = await session.stdout.map(utf8.decode).join();
       final parts = result.split("HTTP_CODE:");
@@ -126,10 +175,7 @@ class SelectEmployeeState extends State<SelectEmployee> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.grey[800],
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.white,
-                        ), 
+                        child: Icon(Icons.person, color: Colors.white),
                       ),
                       title: Text(
                         employee["EmployeeName"]!,
@@ -138,7 +184,7 @@ class SelectEmployeeState extends State<SelectEmployee> {
                       trailing: ElevatedButton(
                         onPressed: () {
                           print("Selezionato: ${employee['EmployeeName']}");
-                          
+                          retreat();
                         },
                         child: Text("Seleziona"),
                       ),

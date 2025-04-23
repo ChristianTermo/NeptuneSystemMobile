@@ -86,7 +86,7 @@ class SelectDeviceState extends State<SelectDevice> {
     });
   }
 
-  Future<void> goToSelectEmployeePage() async {
+  Future<void> goToSelectEmployeePage(dynamic device) async {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -95,6 +95,7 @@ class SelectDeviceState extends State<SelectDevice> {
               sshClient: widget.sshClient,
               ipValue: widget.ipValue,
               machineid: widget.machineid,
+              selectedDevice: device,
             ),
       ),
     );
@@ -158,7 +159,7 @@ class SelectDeviceState extends State<SelectDevice> {
                       ),
                       trailing: ElevatedButton(
                         onPressed: () {
-                          goToSelectEmployeePage();
+                          goToSelectEmployeePage(device);
                         },
                         child: Text("Seleziona"),
                       ),

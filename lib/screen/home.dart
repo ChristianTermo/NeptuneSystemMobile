@@ -6,6 +6,7 @@ import 'package:neptunesystem_mobile/screen/machine_management.dart';
 import 'package:sqflite/sqlite_api.dart';
 import 'add_machine_form.dart';
 import 'package:neptunesystem_mobile/services/machine_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title, required this.database});
@@ -20,13 +21,13 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<Machine> machinelist = [];
   SSHClient? sshClient;
-  bool isConnecting = true; // Stato per la connessione SSH
+  bool isConnecting = true;
 
   @override
   void initState() {
     super.initState();
-    _loadMachines();
     _connectSSH();
+    _loadMachines();
   }
 
   Future<void> _loadMachines() async {
@@ -48,19 +49,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _connectSSH() async {
     try {
-      final socket = await SSHSocket.connect('168.119.172.16', 22000);
+      print("ovfv");
+      print(
+        "sto stampando: ${dotenv.env['SSH_HOST']!} ${dotenv.env['SSH_PORT']} ${dotenv.env['SSH_USERNAME']} ${dotenv.env['SSH_PASSWORD']}",
+      );
+      final socket = await SSHSocket.connect(
+        dotenv.env['SSH_HOST']!,
+        int.parse(dotenv.env['SSH_PORT']!),
+      );
+
       final client = SSHClient(
         socket,
-        username: 'root',
-        onPasswordRequest: () => 'RW9gJbnM9xtRxJXXgxqV',
+        username: dotenv.env['SSH_USERNAME']!,
+        onPasswordRequest: () => dotenv.env['SSH_PASSWORD']!,
       );
+
+      if (!mounted) return;
 
       setState(() {
         sshClient = client;
         isConnecting = false;
       });
 
-      Future.delayed(Duration(milliseconds: 300), () {
+      Future.delayed(const Duration(milliseconds: 300), () {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Connessione SSH riuscita')),
         );
@@ -69,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         isConnecting = false;
       });
-      print("errore ssh  $e");
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Errore nella connessione SSH: $e')),
       );
