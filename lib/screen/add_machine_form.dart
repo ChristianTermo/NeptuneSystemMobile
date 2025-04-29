@@ -68,7 +68,7 @@ Future<Map<String, Object?>> keepAlive(
   } on TimeoutException {
     return {
       'Status': 'Failed',
-      'Error': 'Timeout: la macchina non ha risposto',
+      'Error': 'Timeout: la macchina non ha risposto entro un tempo ragionevole',
     };
   } on http.ClientException catch (e) {
     return {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -45,9 +47,9 @@ class SelectEmployeeState extends State<SelectEmployee> {
       final body;
 
       if (widget.onlyLocal) {
-        final response = await http.get(
-          Uri.parse('http://${widget.ipValue}:8080/api/getEmployee'),
-        );
+        final response = await http
+            .get(Uri.parse('http://${widget.ipValue}:8080/api/getEmployee'))
+            .timeout(const Duration(seconds: 5));
         httpCode = response.statusCode;
         body = response.body;
         print("📡 HTTP Code: $httpCode");
@@ -86,6 +88,18 @@ class SelectEmployeeState extends State<SelectEmployee> {
           isLoading = false;
         });
       }
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Timeout: la macchina non ha risposto entro un tempo ragionevole',
+          ),
+        ),
+      );
+    } on http.ClientException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
     } catch (e) {
       setState(() {
         errorMessage = "Errore di connessione: $e";

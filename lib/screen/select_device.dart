@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -86,6 +88,18 @@ class SelectDeviceState extends State<SelectDevice> {
           isLoading = false;
         });
       }
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Timeout: la macchina non ha risposto entro un tempo ragionevole',
+          ),
+        ),
+      );
+    } on http.ClientException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
     } catch (e) {
       setState(() {
         errorMessage = "Errore di connessione: $e";

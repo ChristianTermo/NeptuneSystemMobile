@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:http/http.dart' as http;
@@ -65,6 +67,14 @@ class MachineManagementState extends State<MachineManagement> {
           context,
         ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
       }
+    } on TimeoutException {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Timeout: la macchina non ha risposto entro un tempo ragionevole')));
+    } on http.ClientException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
     } catch (e) {
       print("❌ Macchina non raggiungibile: $e");
       ScaffoldMessenger.of(
