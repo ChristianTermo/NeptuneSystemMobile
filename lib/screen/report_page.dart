@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,12 +12,14 @@ class ReportPage extends StatefulWidget {
   final dynamic sshClient;
   final String ipValue;
   final String machineid;
+  final bool onlyLocal;
 
   const ReportPage({
     super.key,
     required this.sshClient,
     required this.ipValue,
     required this.machineid,
+    required this.onlyLocal,
   });
 
   @override
@@ -44,16 +47,39 @@ class _ReportPageState extends State<ReportPage> {
     });
 
     try {
-      final session = await widget.sshClient!.execute(
-        'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEvents',
-      );
+      final httpCode;
+      final body;
 
-      final result = await session.stdout.map(utf8.decode).join();
-      final parts = result.split("HTTP_CODE:");
-      final body = parts[0].trim();
-      final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
+      if (widget.onlyLocal) {
+        final response = await http.get(
+          Uri.parse('http://${widget.ipValue}:8080/api/getEvents'),
+        );
+        httpCode = response.statusCode;
+        body = response.body;
 
-      if (httpCode == '200') {
+        print("📡 HTTP Code: $httpCode");
+        print("📜 Body: $body");
+      } else {
+        final session = await widget.sshClient!.execute(
+          'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEvents',
+        );
+
+        final result = await session.stdout.map(utf8.decode).join();
+        final parts = result.split("HTTP_CODE:");
+        body = parts[0].trim();
+        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
+
+        httpCode = int.tryParse(httpCodeString);
+      }
+
+      if (body == '[]') {
+        setState(() {
+          errorMessage = "Nessun report disponibile";
+          isLoading = false;
+        });
+      }
+
+      if (httpCode == 200) {
         setState(() {
           events = json.decode(body);
           filteredEvents = events;
@@ -61,7 +87,9 @@ class _ReportPageState extends State<ReportPage> {
         });
       } else {
         setState(() {
-          errorMessage = "Macchina non raggiungibile";
+          errorMessage =
+              "Macchina non raggiungibile"
+              ' $httpCode $body';
           isLoading = false;
         });
       }
@@ -113,9 +141,7 @@ class _ReportPageState extends State<ReportPage> {
     }
 
     DateTime now = DateTime.now();
-    String formattedDate = DateFormat(
-      'yyyy-MM-dd_HH-mm-ss',
-    ).format(now); 
+    String formattedDate = DateFormat('yyyy-MM-dd_HH-mm-ss').format(now);
     String fileName = "export_$formattedDate.csv";
 
     if (downloadPath != null) {
@@ -214,7 +240,10 @@ class _ReportPageState extends State<ReportPage> {
               ? Center(child: CircularProgressIndicator())
               : errorMessage.isNotEmpty
               ? Center(
-                child: Text(errorMessage, style: TextStyle(color: Colors.red)),
+                child: Text(
+                  errorMessage,
+                  style: TextStyle(color: Colors.red, fontSize: 25),
+                ),
               )
               : ListView.builder(
                 itemCount: filteredEvents.length,

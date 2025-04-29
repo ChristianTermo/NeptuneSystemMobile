@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'package:neptunesystem_mobile/screen/report_page.dart';
 import 'package:neptunesystem_mobile/screen/select_device.dart';
 
@@ -11,11 +11,13 @@ class MachineManagement extends StatefulWidget {
     required this.machineid,
     required this.ipValue,
     required this.sshClient,
+    required this.onlyLocal,
   });
 
   final String ipValue;
   final String machineid;
-  final SSHClient sshClient;
+  final SSHClient? sshClient;
+  final bool onlyLocal;
 
   @override
   State<MachineManagement> createState() => MachineManagementState();
@@ -24,19 +26,36 @@ class MachineManagement extends StatefulWidget {
 class MachineManagementState extends State<MachineManagement> {
   Future<void> restartSystem() async {
     try {
-      final session = await widget.sshClient.execute(
-        'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/RestartSystem',
-      );
+      final httpCode;
+      final body;
 
-      final result = await session.stdout.map(utf8.decode).join();
-      final parts = result.split("HTTP_CODE:");
-      final body = parts[0].trim();
-      final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
+      if (widget.onlyLocal) {
+        final response = await http.get(
+          Uri.parse('http://${widget.ipValue}:8080/RestartSystem'),
+        );
+        httpCode = response.statusCode;
+        body = response.body;
+      } else {
+        if (widget.sshClient != null) {
+          final session = await widget.sshClient?.execute(
+            'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/RestartSystem',
+          );
 
-      print("📡 HTTP Code: $httpCode");
-      print("📜 Body: $body");
+          final result = await session?.stdout.map(utf8.decode).join();
+          final parts = result?.split("HTTP_CODE:");
+          body = parts![0].trim();
+          final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
 
-      if (httpCode == '200') {
+          httpCode = int.tryParse(httpCodeString);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Connessione SSH non riuscita')),
+          );
+          return;
+        }
+      }
+
+      if (httpCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Macchina riavviata con successo')),
         );
@@ -62,6 +81,7 @@ class MachineManagementState extends State<MachineManagement> {
             (context) => ReportPage(
               machineid: widget.machineid,
               ipValue: widget.ipValue,
+              onlyLocal: widget.onlyLocal,
               sshClient: widget.sshClient,
             ),
       ),
@@ -76,6 +96,7 @@ class MachineManagementState extends State<MachineManagement> {
             (context) => SelectDevice(
               machineid: widget.machineid,
               ipValue: widget.ipValue,
+              onlyLocal: widget.onlyLocal,
               sshClient: widget.sshClient,
             ),
       ),

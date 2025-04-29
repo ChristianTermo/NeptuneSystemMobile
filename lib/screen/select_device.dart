@@ -1,18 +1,20 @@
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-
+import 'package:http/http.dart' as http;
 import 'package:neptunesystem_mobile/screen/select_employee.dart';
 
 class SelectDevice extends StatefulWidget {
   final SSHClient? sshClient;
   final String ipValue;
   final String machineid;
+  final bool onlyLocal;
 
   const SelectDevice({
     super.key,
     required this.sshClient,
     required this.ipValue,
+    required this.onlyLocal,
     required this.machineid,
   });
   @override
@@ -38,19 +40,41 @@ class SelectDeviceState extends State<SelectDevice> {
       errorMessage = '';
     });
     try {
-      final session = await widget.sshClient!.execute(
-        'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getDevices',
-      );
+      final httpCode;
+      final body;
 
-      final result = await session.stdout.map(utf8.decode).join();
-      final parts = result.split("HTTP_CODE:");
-      final body = parts[0].trim();
-      final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
+      if (widget.onlyLocal) {
+        final response = await http.get(
+          Uri.parse('http://${widget.ipValue}:8080/api/getDevices'),
+        );
+        httpCode = response.statusCode;
+        body = response.body;
+        print("📡 HTTP Code: $httpCode");
+        print("📜 Body: $body");
+      } else {
+        final session = await widget.sshClient!.execute(
+          'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getDevices',
+        );
 
-      print("📡 HTTP Code: $httpCode");
-      print("📜 Body: $body");
+        final result = await session.stdout.map(utf8.decode).join();
+        final parts = result.split("HTTP_CODE:");
+        body = parts[0].trim();
+        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
 
-      if (httpCode == '200') {
+        httpCode = int.tryParse(httpCodeString);
+
+        print("📡 HTTP Code: $httpCode");
+        print("📜 Body: $body");
+      }
+
+      if (body == '[]') {
+        setState(() {
+          errorMessage = "Lista dispositivi vuota";
+          isLoading = false;
+        });
+      }
+
+      if (httpCode == 200) {
         setState(() {
           devices = json.decode(body);
           filteredDevices = devices;
@@ -95,6 +119,7 @@ class SelectDeviceState extends State<SelectDevice> {
               sshClient: widget.sshClient,
               ipValue: widget.ipValue,
               machineid: widget.machineid,
+              onlyLocal: widget.onlyLocal,
               selectedDevice: device,
             ),
       ),
@@ -133,7 +158,10 @@ class SelectDeviceState extends State<SelectDevice> {
               ? Center(child: CircularProgressIndicator())
               : errorMessage.isNotEmpty
               ? Center(
-                child: Text(errorMessage, style: TextStyle(color: Colors.red)),
+                child: Text(
+                  errorMessage,
+                  style: TextStyle(color: Colors.red, fontSize: 25),
+                ),
               )
               : ListView.builder(
                 itemCount: filteredDevices.length,

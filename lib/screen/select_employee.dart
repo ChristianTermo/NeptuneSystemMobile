@@ -1,11 +1,13 @@
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SelectEmployee extends StatefulWidget {
   final SSHClient? sshClient;
   final String ipValue;
   final String machineid;
+  final bool onlyLocal;
   final dynamic selectedDevice;
 
   const SelectEmployee({
@@ -13,6 +15,7 @@ class SelectEmployee extends StatefulWidget {
     required this.sshClient,
     required this.ipValue,
     required this.machineid,
+    required this.onlyLocal,
     required this.selectedDevice,
   });
   @override
@@ -38,19 +41,40 @@ class SelectEmployeeState extends State<SelectEmployee> {
       errorMessage = '';
     });
     try {
-      final session = await widget.sshClient!.execute(
-        'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEmployee',
-      );
+      final httpCode;
+      final body;
 
-      final result = await session.stdout.map(utf8.decode).join();
-      final parts = result.split("HTTP_CODE:");
-      final body = parts[0].trim();
-      final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
+      if (widget.onlyLocal) {
+        final response = await http.get(
+          Uri.parse('http://${widget.ipValue}:8080/api/getEmployee'),
+        );
+        httpCode = response.statusCode;
+        body = response.body;
+        print("📡 HTTP Code: $httpCode");
+        print("📜 Body: $body");
+      } else {
+        final session = await widget.sshClient!.execute(
+          'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEmployee',
+        );
 
-      print("📡 HTTP Code: $httpCode");
-      print("📜 Body: $body");
+        final result = await session.stdout.map(utf8.decode).join();
+        final parts = result.split("HTTP_CODE:");
+        body = parts[0].trim();
+        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
+        httpCode = int.tryParse(httpCodeString);
 
-      if (httpCode == '200') {
+        print("📡 HTTP Code: $httpCode");
+        print("📜 Body: $body");
+      }
+
+      if (body == '[]') {
+        setState(() {
+          errorMessage = "Lista utenti vuota";
+          isLoading = false;
+        });
+      }
+
+      if (httpCode == 200) {
         setState(() {
           employees = json.decode(body);
           filteredEmployee = employees;
@@ -72,6 +96,9 @@ class SelectEmployeeState extends State<SelectEmployee> {
 
   Future<void> retreat() async {
     try {
+      final httpCode;
+      final body;
+
       final payload = '''
 {
   "deviceId": ${widget.selectedDevice["DeviceId"]},
@@ -79,25 +106,35 @@ class SelectEmployeeState extends State<SelectEmployee> {
   "isAssistant": true
 }
 ''';
-
-      final curlCommand = '''
+      if (widget.onlyLocal) {
+        final response = await http.post(
+          Uri.parse('http://${widget.ipValue}:8080/api/receive/devices'),
+          body: payload,
+        );
+        httpCode = response.statusCode;
+        body = response.body;
+      } else {
+        final curlCommand = '''
 curl -s -X POST -H "Content-Type: application/json" \
 -d '$payload' \
 -w "HTTP_CODE:%{http_code}" \
 http://${widget.ipValue}:8080/api/receive/devices
 ''';
 
-      final session = await widget.sshClient!.execute(curlCommand);
+        final session = await widget.sshClient!.execute(curlCommand);
 
-      final result = await session.stdout.map(utf8.decode).join();
-      final parts = result.split("HTTP_CODE:");
-      final body = parts[0].trim();
-      final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
+        final result = await session.stdout.map(utf8.decode).join();
+        final parts = result.split("HTTP_CODE:");
+        body = parts[0].trim();
+        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
+
+        httpCode = int.tryParse(httpCodeString);
+      }
 
       print("📡 HTTP Code: $httpCode");
       print("📜 Body: $body");
 
-      if (httpCode == '200') {
+      if (httpCode == 200) {
         setState(() {
           employees = json.decode(body);
           filteredEmployee = employees;
@@ -164,7 +201,10 @@ http://${widget.ipValue}:8080/api/receive/devices
               ? Center(child: CircularProgressIndicator())
               : errorMessage.isNotEmpty
               ? Center(
-                child: Text(errorMessage, style: TextStyle(color: Colors.red)),
+                child: Text(
+                  errorMessage,
+                  style: TextStyle(color: Colors.red, fontSize: 25),
+                ),
               )
               : ListView.builder(
                 itemCount: filteredEmployee.length,

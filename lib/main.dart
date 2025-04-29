@@ -12,15 +12,22 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
- Future<Database> initializeDb() async {
+  Future<Database> initializeDb() async {
     return openDatabase(
-      join(await getDatabasesPath(), 'neptunesystemmobile_database.db'),
+      join(await getDatabasesPath(), 'neptunesystemmobile.db'),
+      version: 2, // <-- aumenta versione
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE machines(machineid TEXT PRIMARY KEY, ip_address TEXT)',
+          'CREATE TABLE machines(machineid TEXT PRIMARY KEY, ip_address TEXT, onlyLocal BOOLEAN)',
         );
       },
-      version: 1,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE machines ADD COLUMN serial_number TEXT',
+          );
+        }
+      },
     );
   }
 
@@ -32,7 +39,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-         home: FutureBuilder<Database>(
+      home: FutureBuilder<Database>(
         future: initializeDb(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -47,7 +54,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-
-
-

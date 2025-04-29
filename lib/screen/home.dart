@@ -42,14 +42,16 @@ class _MyHomePageState extends State<MyHomePage> {
             return Machine(
               machineid: map['machineid'] as String,
               ip_address: map['ip_address'] as String,
+              onlyLocal: (map['onlyLocal'] ?? 0) == 1,
             );
           }).toList();
     });
+        print("machinelist" '$machinelist');
+
   }
 
   Future<void> _connectSSH() async {
     try {
-      print("ovfv");
       print(
         "sto stampando: ${dotenv.env['SSH_HOST']!} ${dotenv.env['SSH_PORT']} ${dotenv.env['SSH_USERNAME']} ${dotenv.env['SSH_PASSWORD']}",
       );
@@ -87,7 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void goToManagementPage(String machineid, String ip_address) {
+  void goToManagementPage(String machineid, String ip_address, bool onlyLocal) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -95,7 +97,8 @@ class _MyHomePageState extends State<MyHomePage> {
             (context) => MachineManagement(
               machineid: machineid,
               ipValue: ip_address,
-              sshClient: sshClient!,
+              sshClient: sshClient ,
+              onlyLocal: onlyLocal,
             ),
       ),
     );
@@ -108,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
         builder:
             (context) => AddMachineForm(
               machinelist: machinelist,
-              sshClient: sshClient!,
+              sshClient: sshClient,
               database: widget.database,
             ),
       ),
@@ -166,6 +169,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 )
                 : SingleChildScrollView(
+                  //DGCSMN79L46L182F  BLLLGU92A12H501H FLPLCU76M08L719R GGLPLD93T57G479U BLLLGU92A12H501H
                   padding: const EdgeInsets.all(16),
                   child: Center(
                     child: Wrap(
@@ -218,6 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                           goToManagementPage(
                                             machine.machineid,
                                             machine.ip_address,
+                                            machine.onlyLocal,
                                           );
                                         } else {
                                           ScaffoldMessenger.of(
@@ -264,9 +269,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          if (sshClient != null) {
-            goToFormPage();
-          }
+          goToFormPage();
         },
         tooltip: 'Aggiungi',
         child: const Icon(Icons.add),

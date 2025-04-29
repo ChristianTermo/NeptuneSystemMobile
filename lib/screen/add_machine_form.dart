@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:neptunesystem_mobile/data/entity/machine.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:neptunesystem_mobile/services/machine_service.dart';
+import 'package:http/http.dart' as http;
 
 class AddMachineForm extends StatefulWidget {
   final List<Machine> machinelist;
-  final SSHClient sshClient;
+  final SSHClient? sshClient;
   final Database database;
 
   const AddMachineForm({
@@ -27,6 +29,86 @@ class AddMachineFormState extends State<AddMachineForm> {
   final TextEditingController ipController = TextEditingController();
   final TextEditingController machineIdController = TextEditingController();
   final TextEditingController badgeController = TextEditingController();
+
+  bool onlyLocal = false;
+
+Future<Map<String, Object?>> keepAlive(
+  String ipValue,
+  Machine machine,
+) async {
+  int? httpCode;
+
+  try {
+    if (onlyLocal) {
+      final response = await http
+          .get(Uri.parse('http://$ipValue:8080/api/keepalive'))
+          .timeout(const Duration(seconds: 5));
+
+      httpCode = response.statusCode;
+    } else {
+      if (widget.sshClient != null) {
+        final session = await widget.sshClient!.execute(
+          'curl -s -w "HTTP_CODE:%{http_code}" http://$ipValue:8080/api/keepalive',
+        );
+
+        final response = await session.stdout.map(utf8.decode).join();
+        final parts = response.split("HTTP_CODE:");
+        final body = parts[0].trim();
+        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
+        httpCode = int.tryParse(httpCodeString);
+
+        print("📜 Body: $body");
+      } else {
+        return {
+          'Status': 'Failed',
+          'Error': 'Connessione SSH non riuscita',
+        };
+      }
+    }
+  } on TimeoutException {
+    return {
+      'Status': 'Failed',
+      'Error': 'Timeout: la macchina non ha risposto',
+    };
+  } on http.ClientException catch (e) {
+    return {
+      'Status': 'Failed',
+      'Error': 'Errore HTTP: ${e.message}',
+    };
+  } catch (e) {
+    return {
+      'Status': 'Failed',
+      'Error': 'Errore generico: $e',
+    };
+  }
+
+  print("📡 HTTP Code: $httpCode");
+
+  if (httpCode == 200) {
+    final machineService = MachineService(database: widget.database);
+    final machinelist = await machineService.findByid(machineIdController.text);
+
+    if (machinelist.isEmpty) {
+      await machineService.insertMachine(machine);
+      Navigator.pop(context, true);
+      return {
+        'Status': 'Success',
+        'Error': '',
+      };
+    } else {
+      return {
+        'Status': 'Failed',
+        'Error': 'Macchina già esistente',
+      };
+    }
+  } else {
+    return {
+      'Status': 'Failed',
+      'Error': 'Macchina non raggiungibile (HTTP $httpCode)',
+    };
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +159,21 @@ class AddMachineFormState extends State<AddMachineForm> {
                   return null;
                 },
               ),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Local Version (Just for testing)"),
+                  Switch(
+                    value: onlyLocal,
+                    onChanged: (bool value) {
+                      setState(() {
+                        onlyLocal = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -84,53 +181,17 @@ class AddMachineFormState extends State<AddMachineForm> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'unique_add_machine_button',
         onPressed: () async {
-          if (_formKey.currentState!.validate()) {
-            String ipValue = ipController.text;
-
-            try {
-              final session = await widget.sshClient.execute(
-                'curl -s -w "HTTP_CODE:%{http_code}" http://$ipValue:8080/api/keepalive',
-              );
-
-              final result = await session.stdout.map(utf8.decode).join();
-              final parts = result.split("HTTP_CODE:");
-              final body = parts[0].trim();
-              final httpCode = parts.length > 1 ? parts[1].trim() : "N/A";
-
-              print("📡 HTTP Code: $httpCode");
-              print("📜 Body: $body");
-
-              if (httpCode == '200') {
-                Machine machine = Machine(
-                  machineid: machineIdController.text,
-                  ip_address: ipValue,
-                );
-                MachineService machineService = MachineService(
-                  database: widget.database,
-                );
-                final machinelist = await machineService.findByid(
-                  machineIdController.text,
-                );
-
-                if (machinelist.isEmpty) {
-                  machineService.insertMachine(machine);
-                  Navigator.pop(context, true);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Macchina già esistente')),
-                  );
-                }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Macchina non raggiungibile')),
-                );
-              }
-            } catch (e) {
-              print("❌ Macchina non raggiungibile: $e");
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Macchina non raggiungibile: $e')),
-              );
-            }
+          String ipValue = ipController.text;
+          Machine machine = Machine(
+            machineid: machineIdController.text,
+            ip_address: ipValue,
+            onlyLocal: onlyLocal,
+          );
+          final response = await keepAlive(ipValue, machine);
+          if (response['Status'] == 'Failed') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(response['Error'].toString())),
+            );
           }
         },
         label: const Text("Aggiungi la macchina"),
