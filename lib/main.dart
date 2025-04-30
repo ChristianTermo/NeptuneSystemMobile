@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 void main() async {
+  await Future.delayed(const Duration(seconds: 2));
   await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
