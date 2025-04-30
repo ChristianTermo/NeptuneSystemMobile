@@ -46,8 +46,10 @@ class _MyHomePageState extends State<MyHomePage> {
             );
           }).toList();
     });
-        print("machinelist" '$machinelist');
-
+    print(
+      "machinelist"
+      '$machinelist',
+    );
   }
 
   Future<void> _connectSSH() async {
@@ -97,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
             (context) => MachineManagement(
               machineid: machineid,
               ipValue: ip_address,
-              sshClient: sshClient ,
+              sshClient: sshClient,
               onlyLocal: onlyLocal,
             ),
       ),
@@ -218,23 +220,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                     },
                                     child: FloatingActionButton(
                                       onPressed: () {
-                                        if (sshClient != null) {
-                                          goToManagementPage(
-                                            machine.machineid,
-                                            machine.ip_address,
-                                            machine.onlyLocal,
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Non è stato possibile connettersi in ssh alla macchina',
-                                              ),
-                                            ),
-                                          );
-                                        }
+                                        goToManagementPage(
+                                          machine.machineid,
+                                          machine.ip_address,
+                                          machine.onlyLocal,
+                                        );
                                       },
 
                                       backgroundColor: Colors.white,
