@@ -1,25 +1,22 @@
 import 'dart:async';
-
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:neptunesystem_mobile/main.dart';
+import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
 class SelectEmployee extends StatefulWidget {
-  final SSHClient? sshClient;
   final String ipValue;
   final String machineid;
-  final bool onlyLocal;
   final dynamic selectedDevice;
 
   const SelectEmployee({
     super.key,
-    required this.sshClient,
     required this.ipValue,
     required this.machineid,
-    required this.onlyLocal,
     required this.selectedDevice,
   });
+
   @override
   State<StatefulWidget> createState() => SelectEmployeeState();
 }
@@ -46,28 +43,13 @@ class SelectEmployeeState extends State<SelectEmployee> {
       final httpCode;
       final body;
 
-      if (widget.onlyLocal) {
-        final response = await http
-            .get(Uri.parse('http://${widget.ipValue}:8080/api/getEmployee'))
-            .timeout(const Duration(seconds: 5));
-        httpCode = response.statusCode;
-        body = response.body;
-        print("📡 HTTP Code: $httpCode");
-        print("📜 Body: $body");
-      } else {
-        final session = await widget.sshClient!.execute(
-          'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEmployee',
-        );
-
-        final result = await session.stdout.map(utf8.decode).join();
-        final parts = result.split("HTTP_CODE:");
-        body = parts[0].trim();
-        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
-        httpCode = int.tryParse(httpCodeString);
-
-        print("📡 HTTP Code: $httpCode");
-        print("📜 Body: $body");
-      }
+      final response = await http
+          .get(Uri.parse('${widget.ipValue}/api/getEmployee'))
+          .timeout(const Duration(seconds: 5));
+      httpCode = response.statusCode;
+      body = response.body;
+      print("📡 HTTP Code: $httpCode");
+      print("📜 Body: $body");
 
       if (body == '[]') {
         setState(() {
@@ -108,58 +90,42 @@ class SelectEmployeeState extends State<SelectEmployee> {
     }
   }
 
-  Future<void> retreat() async {
+  Future<void> retreat(dynamic employee) async {
     try {
       final httpCode;
       final body;
 
-      final payload = '''
-{
-  "deviceId": ${widget.selectedDevice["DeviceId"]},
-  "employeeId": "${widget.selectedDevice["EmployeeAssociated"]}",
-  "isAssistant": true
-}
-''';
-      if (widget.onlyLocal) {
-        final response = await http.post(
-          Uri.parse('http://${widget.ipValue}:8080/api/receive/devices'),
-          body: payload,
-        );
-        httpCode = response.statusCode;
-        body = response.body;
-      } else {
-        final curlCommand = '''
-curl -s -X POST -H "Content-Type: application/json" \
--d '$payload' \
--w "HTTP_CODE:%{http_code}" \
-http://${widget.ipValue}:8080/api/receive/devices
-''';
+      final payload = {
+        "deviceId": widget.selectedDevice["DeviceId"],
+        "employeeId": employee["EmployeeId"],
+        "isAssistant": true,
+      };
 
-        final session = await widget.sshClient!.execute(curlCommand);
+      final response = await http.post(
+        Uri.parse('${widget.ipValue}/api/receive/devices'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      httpCode = response.statusCode;
+      body = response.body;
 
-        final result = await session.stdout.map(utf8.decode).join();
-        final parts = result.split("HTTP_CODE:");
-        body = parts[0].trim();
-        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
-
-        httpCode = int.tryParse(httpCodeString);
-      }
-
-      print("📡 HTTP Code: $httpCode");
-      print("📜 Body: $body");
+      print("📡 HTTP Codeaaa: $httpCode");
 
       if (httpCode == 200) {
-        setState(() {
-          employees = json.decode(body);
-          filteredEmployee = employees;
-          isLoading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Operazione avvenuta con successo!')),
+        );
       } else {
+        print(body);
         setState(() {
           errorMessage = "Macchina non raggiungibile";
           isLoading = false;
         });
       }
+      NavigatorService.goToHomePage();
     } catch (e) {
       setState(() {
         errorMessage = "Errore di connessione: $e";
@@ -168,7 +134,7 @@ http://${widget.ipValue}:8080/api/receive/devices
     }
   }
 
-  void filterEvents(String query) {
+  void filterEmployee(String query) {
     setState(() {
       if (query.isEmpty) {
         filteredEmployee = employees;
@@ -195,7 +161,7 @@ http://${widget.ipValue}:8080/api/receive/devices
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             child: TextField(
               controller: searchController,
-              onChanged: filterEvents, // Filtra gli eventi in tempo reale
+              onChanged: filterEmployee, 
               decoration: InputDecoration(
                 hintText: "Cerca utente...",
                 prefixIcon: Icon(Icons.search),
@@ -238,7 +204,7 @@ http://${widget.ipValue}:8080/api/receive/devices
                       trailing: ElevatedButton(
                         onPressed: () {
                           print("Selezionato: ${employee['EmployeeName']}");
-                          retreat();
+                          retreat(employee);
                         },
                         child: Text("Seleziona"),
                       ),

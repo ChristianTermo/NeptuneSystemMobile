@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:neptunesystem_mobile/screen/home.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
 void main() async {
   await Future.delayed(const Duration(seconds: 2));
@@ -40,6 +41,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
+      navigatorKey: NavigatorService.navigatorKey,
+
       home: FutureBuilder<Database>(
         future: initializeDb(),
         builder: (context, snapshot) {

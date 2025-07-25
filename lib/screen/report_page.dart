@@ -5,21 +5,16 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
-//import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
 class ReportPage extends StatefulWidget {
-  final dynamic sshClient;
   final String ipValue;
   final String machineid;
-  final bool onlyLocal;
 
   const ReportPage({
     super.key,
-    required this.sshClient,
     required this.ipValue,
     required this.machineid,
-    required this.onlyLocal,
   });
 
   @override
@@ -50,27 +45,14 @@ class _ReportPageState extends State<ReportPage> {
       final httpCode;
       final body;
 
-      if (widget.onlyLocal) {
-        final response = await http.get(
-          Uri.parse('http://${widget.ipValue}:8080/api/getEvents'),
-        );
-        httpCode = response.statusCode;
-        body = response.body;
+      final response = await http.get(
+        Uri.parse('${widget.ipValue}/api/getEvents'),
+      );
+      httpCode = response.statusCode;
+      body = response.body;
 
-        print("📡 HTTP Code: $httpCode");
-        print("📜 Body: $body");
-      } else {
-        final session = await widget.sshClient!.execute(
-          'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getEvents',
-        );
-
-        final result = await session.stdout.map(utf8.decode).join();
-        final parts = result.split("HTTP_CODE:");
-        body = parts[0].trim();
-        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
-
-        httpCode = int.tryParse(httpCodeString);
-      }
+      print("📡 HTTP Code: $httpCode");
+      print("📜 Body: $body");
 
       if (body == '[]') {
         setState(() {
@@ -101,22 +83,28 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  String formatDate(String isoDate) {
-    DateTime dateTime = DateTime.parse(isoDate).toLocal();
-    return DateFormat('dd MMMM yyyy, HH:mm').format(dateTime);
+  String formatDate(String rawDate) {
+    try {
+      if (rawDate.isEmpty) return 'Data non disponibile';
+      DateTime parsedDate = DateTime.parse(rawDate);
+      return DateFormat('dd/MM/yyyy HH:mm').format(parsedDate);
+    } catch (e) {
+      print("Errore nel parsing della data: $rawDate");
+      return 'Formato data non valido';
+    }
   }
 
   Future<bool> exportToCSV() async {
     List<List<dynamic>> rows = [
-      ["EventType", "TimeStamp", "EmployeeId", "Barcode"],
+      ["EventType", "TimeStamp", "EmployeeId", "Device"],
     ];
 
     for (var event in events) {
       rows.add([
-        event["EventType"],
-        event["EventTimestamp"],
-        event["EmployeeId"],
-        event["Barcode"],
+        event["eventType"],
+        event["eventTimeStamp"],
+        event["employee"],
+        event["objectId"],
       ]);
     }
 
@@ -164,13 +152,13 @@ class _ReportPageState extends State<ReportPage> {
       } else {
         filteredEvents =
             events.where((event) {
-              return event['EventType'].toString().toLowerCase().contains(
+              return event['eventType'].toString().toLowerCase().contains(
                     query.toLowerCase(),
                   ) ||
-                  event['Barcode'].toString().toLowerCase().contains(
+                  event['objectId'].toString().toLowerCase().contains(
                     query.toLowerCase(),
                   ) ||
-                  event['EmployeeId'].toString().toLowerCase().contains(
+                  event['employee'].toString().toLowerCase().contains(
                     query.toLowerCase(),
                   );
             }).toList();
@@ -249,14 +237,22 @@ class _ReportPageState extends State<ReportPage> {
                 itemCount: filteredEvents.length,
                 itemBuilder: (context, index) {
                   final event = filteredEvents[index];
-                  String formattedDate = formatDate(event['EventTimestamp']);
+
+                  String formattedDate = formatDate(
+                    event['EventTimeStamp'] ?? '',
+                  );
+                  String eventType = event['EventType'] ?? 'N/A';
+                  String objectId = event['ObjectId'] ?? 'N/A';
+                  String employee = event['Employee'] ?? 'N/A';
+
                   return Card(
                     margin: EdgeInsets.all(8),
                     child: ListTile(
-                      title: Text("Evento: ${event['EventType']}"),
-                      subtitle: Text("Barcode: ${event['Barcode']}"),
+                      title: Text("Evento: $eventType"),
+                      subtitle: Text("Dispositivo: $objectId"),
                       trailing: Text(
-                        "$formattedDate\nUtente: ${event['EmployeeId']}",
+                        "$formattedDate\nUtente: $employee",
+                        textAlign: TextAlign.right,
                       ),
                     ),
                   );

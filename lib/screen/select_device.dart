@@ -1,22 +1,17 @@
 import 'dart:async';
-
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:neptunesystem_mobile/screen/select_employee.dart';
+import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
 class SelectDevice extends StatefulWidget {
-  final SSHClient? sshClient;
   final String ipValue;
   final String machineid;
-  final bool onlyLocal;
 
   const SelectDevice({
     super.key,
-    required this.sshClient,
     required this.ipValue,
-    required this.onlyLocal,
     required this.machineid,
   });
   @override
@@ -33,10 +28,10 @@ class SelectDeviceState extends State<SelectDevice> {
   @override
   void initState() {
     super.initState();
-    getEmployeeForAssistantRetreat();
+    getDevices();
   }
 
-  Future<void> getEmployeeForAssistantRetreat() async {
+  Future<void> getDevices() async {
     setState(() {
       isLoading = true;
       errorMessage = '';
@@ -45,29 +40,14 @@ class SelectDeviceState extends State<SelectDevice> {
       final httpCode;
       final body;
 
-      if (widget.onlyLocal) {
         final response = await http.get(
-          Uri.parse('http://${widget.ipValue}:8080/api/getDevices'),
+          Uri.parse('${widget.ipValue}/api/getDevices'),
         );
         httpCode = response.statusCode;
         body = response.body;
         print("📡 HTTP Code: $httpCode");
         print("📜 Body: $body");
-      } else {
-        final session = await widget.sshClient!.execute(
-          'curl -s -w "HTTP_CODE:%{http_code}" http://${widget.ipValue}:8080/api/getDevices',
-        );
-
-        final result = await session.stdout.map(utf8.decode).join();
-        final parts = result.split("HTTP_CODE:");
-        body = parts[0].trim();
-        final httpCodeString = parts.length > 1 ? parts[1].trim() : "N/A";
-
-        httpCode = int.tryParse(httpCodeString);
-
-        print("📡 HTTP Code: $httpCode");
-        print("📜 Body: $body");
-      }
+     
 
       if (body == '[]') {
         setState(() {
@@ -115,29 +95,13 @@ class SelectDeviceState extends State<SelectDevice> {
       } else {
         filteredDevices =
             devices.where((event) {
-              return event['EmployeeAssociated']
+              return event['DeviceType']
                   .toString()
                   .toLowerCase()
                   .contains(query.toLowerCase());
             }).toList();
       }
     });
-  }
-
-  Future<void> goToSelectEmployeePage(dynamic device) async {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => SelectEmployee(
-              sshClient: widget.sshClient,
-              ipValue: widget.ipValue,
-              machineid: widget.machineid,
-              onlyLocal: widget.onlyLocal,
-              selectedDevice: device,
-            ),
-      ),
-    );
   }
 
   @override
@@ -192,7 +156,7 @@ class SelectDeviceState extends State<SelectDevice> {
                         ), // Icona utente
                       ),
                       title: Text(
-                        device["EmployeeAssociated"]!,
+                        "${device["ObjectId"]!} ${device["DeviceSize"] ?? 'N/A' }",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
@@ -201,7 +165,7 @@ class SelectDeviceState extends State<SelectDevice> {
                       ),
                       trailing: ElevatedButton(
                         onPressed: () {
-                          goToSelectEmployeePage(device);
+                         NavigatorService.goToSelectEmployeePage(machineid: widget.machineid, ipValue: widget.ipValue, selectedDevice: device,);
                         },
                         child: Text("Seleziona"),
                       ),

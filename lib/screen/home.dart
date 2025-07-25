@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:dartssh2/dartssh2.dart';
-import 'package:http/http.dart';
 import 'package:neptunesystem_mobile/data/entity/machine.dart';
-import 'package:neptunesystem_mobile/screen/machine_management.dart';
 import 'package:sqflite/sqlite_api.dart';
-import 'add_machine_form.dart';
 import 'package:neptunesystem_mobile/services/machine_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title, required this.database});
@@ -20,13 +16,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Machine> machinelist = [];
-  SSHClient? sshClient;
   bool isConnecting = true;
 
   @override
   void initState() {
     super.initState();
-    _connectSSH();
     _loadMachines();
   }
 
@@ -36,97 +30,24 @@ class _MyHomePageState extends State<MyHomePage> {
 
     final machineMaps = await machineService.getMachines();
 
+    if (!mounted) return;
+
     setState(() {
+      isConnecting = false;
       machinelist =
           machineMaps.map((map) {
             return Machine(
               machineid: map['machineid'] as String,
               ip_address: map['ip_address'] as String,
-              onlyLocal: (map['onlyLocal'] ?? 0) == 1,
             );
           }).toList();
     });
-    print(
-      "machinelist"
-      '$machinelist',
-    );
-  }
 
-  Future<void> _connectSSH() async {
-    try {
-      print(
-        "sto stampando: ${dotenv.env['SSH_HOST']!} ${dotenv.env['SSH_PORT']} ${dotenv.env['SSH_USERNAME']} ${dotenv.env['SSH_PASSWORD']}",
-      );
-      final socket = await SSHSocket.connect(
-        dotenv.env['SSH_HOST']!,
-        int.parse(dotenv.env['SSH_PORT']!),
-      );
-
-      final client = SSHClient(
-        socket,
-        username: dotenv.env['SSH_USERNAME']!,
-        onPasswordRequest: () => dotenv.env['SSH_PASSWORD']!,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        sshClient = client;
-        isConnecting = false;
-      });
-
-      Future.delayed(const Duration(milliseconds: 300), () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Connessione SSH riuscita')),
-        );
-      });
-    } catch (e) {
-      setState(() {
-        isConnecting = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Errore nella connessione SSH: $e')),
-      );
-    }
-  }
-
-  void goToManagementPage(String machineid, String ip_address, bool onlyLocal) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => MachineManagement(
-              machineid: machineid,
-              ipValue: ip_address,
-              sshClient: sshClient,
-              onlyLocal: onlyLocal,
-            ),
-      ),
-    );
-  }
-
-  void goToFormPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => AddMachineForm(
-              machinelist: machinelist,
-              sshClient: sshClient,
-              database: widget.database,
-            ),
-      ),
-    ).then((result) {
-      if (result == true) {
-        _loadMachines();
-      }
-    });
+    print("machinelist: $machinelist");
   }
 
   @override
   void dispose() {
-    sshClient?.close();
     super.dispose();
   }
 
@@ -171,7 +92,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 )
                 : SingleChildScrollView(
-                  //DGCSMN79L46L182F  BLLLGU92A12H501H FLPLCU76M08L719R GGLPLD93T57G479U BLLLGU92A12H501H
                   padding: const EdgeInsets.all(16),
                   child: Center(
                     child: Wrap(
@@ -220,22 +140,30 @@ class _MyHomePageState extends State<MyHomePage> {
                                     },
                                     child: FloatingActionButton(
                                       onPressed: () {
-                                        goToManagementPage(
-                                          machine.machineid,
-                                          machine.ip_address,
-                                          machine.onlyLocal,
+                                        NavigatorService.goToManagementPage(
+                                          machineid: machine.machineid,
+                                          ipValue: machine.ip_address,
                                         );
                                       },
 
                                       backgroundColor: Colors.white,
                                       elevation: 5,
                                       child:
-                                          machine.machineid.contains('900') ||
-                                                  machine.machineid.contains(
-                                                    'S2',
-                                                  )
+                                          machine.machineid.contains('900')
                                               ? Image.asset(
                                                 'assets/MACH900.png',
+                                                fit: BoxFit.contain,
+                                              )
+                                              : machine.machineid.contains(
+                                                'MDS',
+                                              )
+                                              ? Image.asset(
+                                                'assets/MDS.png',
+                                                fit: BoxFit.contain,
+                                              )
+                                              : machine.machineid.contains('S2')
+                                              ? Image.asset(
+                                                'assets/S2.png',
                                                 fit: BoxFit.contain,
                                               )
                                               : const SizedBox.shrink(),
@@ -259,7 +187,13 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          goToFormPage();
+          NavigatorService.goToFormPage(
+            machinelist: machinelist,
+            database: widget.database,
+            onReturn: () {
+              if (mounted) _loadMachines();
+            },
+          );
         },
         tooltip: 'Aggiungi',
         child: const Icon(Icons.add),
