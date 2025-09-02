@@ -219,14 +219,18 @@ class _PlanningPageState extends State<PlanningPage> {
       final body;
       var uuid = Uuid();
 
-      final payload = {
-        "deviceId": device["DeviceId"],
-        "employeeId": employee["EmployeeId"],
-        "planningDate": _formatDate(startDateTime),
+      final payload = [{
+        "DeviceId": device["DeviceId"],
+        "EmployeeId": employee["EmployeeId"],
+        "PlanningDate": _formatDate(startDateTime),
         "StartPlan": _formatTime(startDateTime),
         "StopPlan": _formatTime(endDateTime),
-        "PlanningId": uuid.v1(),
-      };
+        "PlanningID": uuid.v1().toString(),
+      }];
+
+      print("planningId $payload" );
+
+      print("payload + $payload");
 
       final response = await http.post(
         Uri.parse('${widget.ipValue}/Planning'),

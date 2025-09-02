@@ -47,6 +47,22 @@ class SelectOperationPlanningState extends State<SelectOperationPlanning> {
                     machineid: widget.machineid,
                   ),
                 ),
+                _buildMachineOption(
+                  'Registra utente',
+                  Icons.assignment_ind_outlined,
+                  () => NavigatorService.goToAddNewUserForm(
+                    ipValue: widget.ipValue,
+                    machineid: widget.machineid,
+                  ),
+                ),
+                _buildMachineOption(
+                  'Registra auto',
+                  Icons.car_rental,
+                  () => NavigatorService.goToAddNewCarForm(
+                    ipValue: widget.ipValue,
+                    machineid: widget.machineid,
+                  ),
+                ),
               ],
             ),
           ],

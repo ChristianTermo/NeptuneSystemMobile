@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:neptunesystem_mobile/data/entity/machine.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/sqlite_api.dart';
 import 'package:neptunesystem_mobile/services/machine_service.dart';
 import 'package:neptunesystem_mobile/services/navigator_service.dart';
@@ -24,24 +26,26 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadMachines();
   }
 
+
   Future<void> _loadMachines() async {
     print("Ricarico la lista delle macchine...");
+
     MachineService machineService = MachineService(database: widget.database);
 
     final machineMaps = await machineService.getMachines();
-
     if (!mounted) return;
 
     setState(() {
       isConnecting = false;
-      machinelist =
-          machineMaps.map((map) {
-            return Machine(
-              machineid: map['machineid'] as String,
-              ip_address: map['ip_address'] as String,
-            );
-          }).toList();
+      for (Map<String, Object?> map in machineMaps) {
+        Machine machine = Machine.fromMap(map);
+        machinelist.add(machine);
+      }
     });
+
+    if (machinelist.length == 1) {
+      NavigatorService.goToManagementPage(machineid: machinelist.first.machineid, ipValue: machinelist.first.ip_address, isTruckingOn: machinelist.first.isTruckingOn);
+    }
 
     print("machinelist: $machinelist");
   }
@@ -143,6 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         NavigatorService.goToManagementPage(
                                           machineid: machine.machineid,
                                           ipValue: machine.ip_address,
+                                          isTruckingOn: machine.isTruckingOn
                                         );
                                       },
 

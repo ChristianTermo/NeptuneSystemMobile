@@ -29,6 +29,12 @@ class MachineService {
     await db.delete('machines', where: 'machineid = ?', whereArgs: [id]);
   }
 
+  
+  Future<void> deleteAllMachine() async {
+    final db = await database;
+    await db.delete('machines');
+  }
+
   Future<List<Map<String, Object?>>> findByid(String id) async {
     final db = await database;
     List<Map<String, Object?>> machine = await db.query('machines', where: 'machineid = ?', whereArgs: [id]);

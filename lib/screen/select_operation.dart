@@ -8,10 +8,12 @@ class SelectOperation extends StatefulWidget {
     super.key,
     required this.machineid,
     required this.ipValue,
+    required this.isTruckingOn
   });
 
   final String ipValue;
   final String machineid;
+  final int isTruckingOn;
 
   @override
   State<SelectOperation> createState() => SelectOperationState();
@@ -93,10 +95,19 @@ class SelectOperationState extends State<SelectOperation> {
                   Icons.restart_alt, 
                   restartSystem,
                 ),
+                widget.isTruckingOn == 0 ?
                 _buildMachineOption(
-                  'Prenotazioni',
+                   'Gestione macchina',
                   Icons.settings,
                   () => NavigatorService.goToSelectOperationPlanningPage(
+                    ipValue: widget.ipValue,
+                    machineid: widget.machineid,
+                  ),
+                ) :
+                _buildMachineOption(
+                   'Daimplementare',
+                  Icons.settings,
+                  () => NavigatorService.goToEventsPage(
                     ipValue: widget.ipValue,
                     machineid: widget.machineid,
                   ),

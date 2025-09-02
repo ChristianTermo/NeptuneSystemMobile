@@ -77,6 +77,65 @@ class _ReportPlanningPageState extends State<ReportPlanningPage> {
     }
   }
 
+  Future<void> deletePlanning(dynamic planning) async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      final httpCode;
+      final body;
+
+      final payload = [
+        {
+          "DeviceId": planning["DeviceId"],
+          "EmployeeId": planning["EmployeeId"],
+          "PlanningDate": planning["PlanningDate"],
+          "StartPlan": planning["StartPlan"],
+          "StopPlan": planning["StopPlan"],
+          "PlanningID": planning["PlanningId"],
+          "EnumDeviceType": planning["EnumDeviceType"],
+        },
+      ];
+
+      final response = await http.delete(
+        Uri.parse('${widget.ipValue}/Planning'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+
+      httpCode = response.statusCode;
+      body = response.body;
+
+      print("📡 HTTP Code: $httpCode");
+      print("📜 Body: $body");
+
+      if (httpCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Operazione avvenuta con successo!')),
+        );
+      } else {
+        print(body);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
+        setState(() {
+          errorMessage = "Macchina non raggiungibile";
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = "Errore di connessione: $e";
+        isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,17 +158,37 @@ class _ReportPlanningPageState extends State<ReportPlanningPage> {
                   String deviceId = planning['DeviceId'] ?? 'N/A';
                   String planningDate = planning['PlanningDate'] ?? 'N/A';
                   //String objectId = planning['Emplo'] ?? 'N/A';
-                  String employee = planning['EmployeeName'] ?? 'N/A';
+                  String employee = planning['EmployeeId'] ?? 'N/A';
 
                   return Card(
                     margin: EdgeInsets.all(8),
                     child: ListTile(
                       title: Text("Auto: $deviceId"),
-                     // subtitle: Text("Dispositivo: $objectId"),
+                      // subtitle: Text("Dispositivo: $objectId"),
                       trailing: Text(
                         "$planningDate\nUtente: $employee",
                         textAlign: TextAlign.right,
                       ),
+                      onLongPress: () {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text(
+                                  'Vuoi eliminare questa prenotazione?',
+                                ),
+                                actions: [
+                                  IconButton(
+                                    onPressed: () async {
+                                      await deletePlanning(planning);
+                                      setState(initState);
+                                    },
+                                    icon: const Icon(Icons.check),
+                                  ),
+                                ],
+                              ),
+                        );
+                      },
                     ),
                   );
                 },

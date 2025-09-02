@@ -17,10 +17,15 @@ class MyApp extends StatelessWidget {
   Future<Database> initializeDb() async {
     return openDatabase(
       join(await getDatabasesPath(), 'neptunesystemmobile.db'),
-      version: 2, // <-- aumenta versione
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE machines(machineid TEXT PRIMARY KEY, ip_address TEXT, onlyLocal BOOLEAN)',
+      version: 5, // <-- aumenta versione
+      onCreate: (db, version) async {
+        print("oncreate called");
+        await db.execute(
+          'CREATE TABLE machines('
+          'machineid TEXT PRIMARY KEY, '
+          'ip_address TEXT, '
+          'isTruckingOn INTEGER NOT NULL CHECK (isTruckingOn IN (0, 1))'
+          ')',
         );
       },
       onUpgrade: (db, oldVersion, newVersion) async {

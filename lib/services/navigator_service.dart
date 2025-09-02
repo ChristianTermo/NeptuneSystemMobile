@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:neptunesystem_mobile/data/entity/machine.dart';
+import 'package:neptunesystem_mobile/screen/add_car_page.dart';
+import 'package:neptunesystem_mobile/screen/add_employee_page.dart';
 import 'package:neptunesystem_mobile/screen/add_planning_page.dart';
 import 'package:neptunesystem_mobile/screen/home.dart';
 import 'package:neptunesystem_mobile/screen/report_page.dart';
@@ -72,12 +74,16 @@ class NavigatorService {
   static Future<void> goToManagementPage({
     required String machineid,
     required String ipValue,
+    required int isTruckingOn,
   }) async {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder:
-            (context) =>
-                SelectOperation(machineid: machineid, ipValue: ipValue),
+            (context) => SelectOperation(
+              machineid: machineid,
+              ipValue: ipValue,
+              isTruckingOn: isTruckingOn,
+            ),
       ),
     );
   }
@@ -134,6 +140,31 @@ class NavigatorService {
         builder:
             (context) =>
                 ReportPlanningPage(ipValue: ipValue, machineid: machineid),
+      ),
+    );
+  }
+
+  static Future<void> goToAddNewCarForm({
+    required String machineid,
+    required String ipValue,
+  }) async {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder:
+            (context) => AddCarPage(ipValue: ipValue, machineid: machineid),
+      ),
+    );
+  }
+
+  static Future<void> goToAddNewUserForm({
+    required String machineid,
+    required String ipValue,
+  }) async {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                AddEmployeePage(ipValue: ipValue, machineid: machineid),
       ),
     );
   }

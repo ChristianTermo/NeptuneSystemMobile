@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:neptunesystem_mobile/data/entity/machine.dart';
 import 'package:sqflite/sqflite.dart';
@@ -23,21 +24,19 @@ class AddMachineFormState extends State<AddMachineForm> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController ipController = TextEditingController();
-  final TextEditingController machineIdController = TextEditingController();
-  final TextEditingController badgeController = TextEditingController();
 
-  Future<Map<String, Object?>> keepAlive(
-    String ipValue,
-    Machine machine,
-  ) async {
-    int? httpCode;
+  Future<Map<String, Object?>> keepAlive() async {
+    final httpCode;
+    final body;
+    final ipValue = ipController.text;
 
     try {
       final response = await http
-          .get(Uri.parse('$ipValue/keepalive'))
+          .get(Uri.parse('$ipValue/api/keepalive'))
           .timeout(const Duration(seconds: 5));
 
       httpCode = response.statusCode;
+      body = json.decode(response.body);
     } on TimeoutException {
       return {
         'Status': 'Failed',
@@ -55,10 +54,15 @@ class AddMachineFormState extends State<AddMachineForm> {
     if (httpCode == 200) {
       final machineService = MachineService(database: widget.database);
       final machinelist = await machineService.findByid(
-        machineIdController.text,
+        body["machineId"],
       );
 
       if (machinelist.isEmpty) {
+        Machine machine = Machine(
+          machineid: body["machineId"],
+          ip_address: ipValue,
+          isTruckingOn: body["truckingOn"] ? 1 : 0,
+        );
         await machineService.insertMachine(machine);
         Navigator.pop(context, true);
         return {'Status': 'Success', 'Error': ''};
@@ -98,30 +102,6 @@ class AddMachineFormState extends State<AddMachineForm> {
                   return null;
                 },
               ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: machineIdController,
-                autofocus: true,
-                decoration: InputDecoration(labelText: "Machine Id"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Compilare il campo Machine Id';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: badgeController,
-                autofocus: true,
-                decoration: InputDecoration(labelText: "Codice badge"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Compilare il campo Codice badge';
-                  }
-                  return null;
-                },
-              ),
             ],
           ),
         ),
@@ -129,12 +109,7 @@ class AddMachineFormState extends State<AddMachineForm> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'unique_add_machine_button',
         onPressed: () async {
-          String ipValue = ipController.text;
-          Machine machine = Machine(
-            machineid: machineIdController.text,
-            ip_address: ipValue,
-          );
-          final response = await keepAlive(ipValue, machine);
+          final response = await keepAlive();
           if (response['Status'] == 'Failed') {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(response['Error'].toString())),
