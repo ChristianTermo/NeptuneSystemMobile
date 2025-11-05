@@ -101,10 +101,10 @@ class _ReportPageState extends State<ReportPage> {
 
     for (var event in filteredEvents) {
       rows.add([
-        event["eventType"],
-        event["eventTimeStamp"],
-        event["employee"],
-        event["objectId"],
+        event["EventType"],
+        event["EventTimeStamp"],
+        event["Employee"],
+        event["ObjectId"],
       ]);
     }
 
