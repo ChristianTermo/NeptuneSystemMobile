@@ -8,11 +8,13 @@ import 'package:neptunesystem_mobile/services/navigator_service.dart';
 class SelectDevice extends StatefulWidget {
   final String ipValue;
   final String machineid;
+  final int isTruckingOn;
 
   const SelectDevice({
     super.key,
     required this.ipValue,
     required this.machineid,
+    required this.isTruckingOn,
   });
   @override
   State<StatefulWidget> createState() => SelectDeviceState();
@@ -40,14 +42,13 @@ class SelectDeviceState extends State<SelectDevice> {
       final httpCode;
       final body;
 
-        final response = await http.get(
-          Uri.parse('${widget.ipValue}/api/getDevices'),
-        );
-        httpCode = response.statusCode;
-        body = response.body;
-        print("📡 HTTP Code: $httpCode");
-        print("📜 Body: $body");
-     
+      final response = await http.get(
+        Uri.parse('${widget.ipValue}/api/getDevices'),
+      );
+      httpCode = response.statusCode;
+      body = response.body;
+      print("📡 HTTP Code: $httpCode");
+      print("📜 Body: $body");
 
       if (body == '[]') {
         setState(() {
@@ -95,10 +96,9 @@ class SelectDeviceState extends State<SelectDevice> {
       } else {
         filteredDevices =
             devices.where((event) {
-              return event['DeviceType']
-                  .toString()
-                  .toLowerCase()
-                  .contains(query.toLowerCase());
+              return event['ObjectId'].toString().toLowerCase().contains(
+                query.toLowerCase(),
+              );
             }).toList();
       }
     });
@@ -156,7 +156,7 @@ class SelectDeviceState extends State<SelectDevice> {
                         ), // Icona utente
                       ),
                       title: Text(
-                        "${device["ObjectId"]!} ${device["DeviceSize"] ?? 'N/A' }",
+                        "${device["ObjectId"]!} ${device["DeviceSize"] ?? 'N/A'}",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
@@ -165,7 +165,12 @@ class SelectDeviceState extends State<SelectDevice> {
                       ),
                       trailing: ElevatedButton(
                         onPressed: () {
-                         NavigatorService.goToSelectEmployeePage(machineid: widget.machineid, ipValue: widget.ipValue, selectedDevice: device,);
+                          NavigatorService.goToSelectEmployeePage(
+                            machineid: widget.machineid,
+                            ipValue: widget.ipValue,
+                            selectedDevice: device,
+                            isTruckingOn:  widget.isTruckingOn
+                          );
                         },
                         child: Text("Seleziona"),
                       ),

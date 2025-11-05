@@ -2,19 +2,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:neptunesystem_mobile/main.dart';
+import 'package:neptunesystem_mobile/services/employee_service.dart';
 import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
 class SelectEmployee extends StatefulWidget {
   final String ipValue;
   final String machineid;
   final dynamic selectedDevice;
+  final int isTruckingOn;
 
   const SelectEmployee({
     super.key,
     required this.ipValue,
     required this.machineid,
     required this.selectedDevice,
+    required this.isTruckingOn,
   });
 
   @override
@@ -27,67 +29,26 @@ class SelectEmployeeState extends State<SelectEmployee> {
   bool isLoading = false;
   String errorMessage = '';
   TextEditingController searchController = TextEditingController();
+  EmployeeService employeeService = EmployeeService();
 
   @override
   void initState() {
     super.initState();
-    getEmployeeForAssistantRetreat();
-  }
+    isLoading = true;
 
-  Future<void> getEmployeeForAssistantRetreat() async {
-    setState(() {
-      isLoading = true;
-      errorMessage = '';
-    });
-    try {
-      final httpCode;
-      final body;
-
-      final response = await http
-          .get(Uri.parse('${widget.ipValue}/api/getEmployee'))
-          .timeout(const Duration(seconds: 5));
-      httpCode = response.statusCode;
-      body = response.body;
-      print("📡 HTTP Code: $httpCode");
-      print("📜 Body: $body");
-
-      if (body == '[]') {
-        setState(() {
-          errorMessage = "Lista utenti vuota";
-          isLoading = false;
-        });
-      }
-
-      if (httpCode == 200) {
-        setState(() {
-          employees = json.decode(body);
-          filteredEmployee = employees;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          errorMessage = "Macchina non raggiungibile";
-          isLoading = false;
-        });
-      }
-    } on TimeoutException {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Timeout: la macchina non ha risposto entro un tempo ragionevole',
-          ),
-        ),
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+        employees = await employeeService.getEmployeeForAssistantRetreat(
+        widget.ipValue,
+        employees,
       );
-    } on http.ClientException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
-    } catch (e) {
+
       setState(() {
-        errorMessage = "Errore di connessione: $e";
+        filteredEmployee = employees;
         isLoading = false;
       });
-    }
+
+      print("filteredEmployee: $filteredEmployee");
+    });
   }
 
   Future<void> retreat(dynamic employee) async {
@@ -96,9 +57,10 @@ class SelectEmployeeState extends State<SelectEmployee> {
       final body;
 
       final payload = {
-        "deviceId": widget.selectedDevice["DeviceId"],
+        "deviceId": widget.selectedDevice["ObjectId"],
         "employeeId": employee["EmployeeId"],
         "isAssistant": true,
+        "deviceDetailId": widget.selectedDevice["DeviceSize"],
       };
 
       final response = await http.post(
@@ -113,6 +75,7 @@ class SelectEmployeeState extends State<SelectEmployee> {
       body = response.body;
 
       print("📡 HTTP Codeaaa: $httpCode");
+      print("📡 HTTP Codeaaa: ${widget.selectedDevice}");
 
       if (httpCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,7 +104,7 @@ class SelectEmployeeState extends State<SelectEmployee> {
       } else {
         filteredEmployee =
             employees.where((event) {
-              return event['EmployeeId'].toString().toLowerCase().contains(
+              return event['EmployeeName'].toString().toLowerCase().contains(
                 query.toLowerCase(),
               );
             }).toList();
@@ -161,7 +124,7 @@ class SelectEmployeeState extends State<SelectEmployee> {
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             child: TextField(
               controller: searchController,
-              onChanged: filterEmployee, 
+              onChanged: filterEmployee,
               decoration: InputDecoration(
                 hintText: "Cerca utente...",
                 prefixIcon: Icon(Icons.search),

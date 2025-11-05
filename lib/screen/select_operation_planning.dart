@@ -32,7 +32,7 @@ class SelectOperationPlanningState extends State<SelectOperationPlanning> {
               alignment: WrapAlignment.center,
               children: [
                 _buildMachineOption(
-                  'Visualizza prenotazioni',
+                  'Visualizza planning',
                   Icons.remove_red_eye,
                   () => NavigatorService.goToReportPlanningPage(
                     ipValue: widget.ipValue,
@@ -40,7 +40,7 @@ class SelectOperationPlanningState extends State<SelectOperationPlanning> {
                   ),
                 ),
                 _buildMachineOption(
-                  'Nuova prenotazione',
+                  'Nuovo planning',
                   Icons.add,
                   () => NavigatorService.goToPlanningPage(
                     ipValue: widget.ipValue,

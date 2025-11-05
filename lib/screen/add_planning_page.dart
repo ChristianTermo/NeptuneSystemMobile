@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:neptunesystem_mobile/services/employee_service.dart';
 import 'package:neptunesystem_mobile/services/navigator_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -30,6 +31,7 @@ class _PlanningPageState extends State<PlanningPage> {
   Map<String, dynamic>? selectedDevice;
   bool isLoading = false;
   String errorMessage = '';
+  EmployeeService employeeService = EmployeeService();
 
   Future<void> _selectDateTime({required bool isStart}) async {
     final now = DateTime.now();
@@ -219,16 +221,18 @@ class _PlanningPageState extends State<PlanningPage> {
       final body;
       var uuid = Uuid();
 
-      final payload = [{
-        "DeviceId": device["DeviceId"],
-        "EmployeeId": employee["EmployeeId"],
-        "PlanningDate": _formatDate(startDateTime),
-        "StartPlan": _formatTime(startDateTime),
-        "StopPlan": _formatTime(endDateTime),
-        "PlanningID": uuid.v1().toString(),
-      }];
+      final payload = [
+        {
+          "DeviceId": device["DeviceId"],
+          "EmployeeId": employee["EmployeeId"],
+          "PlanningDate": _formatDate(startDateTime),
+          "StartPlan": _formatTime(startDateTime),
+          "StopPlan": _formatTime(endDateTime),
+          "PlanningID": uuid.v1().toString(),
+        },
+      ];
 
-      print("planningId $payload" );
+      print("planningId $payload");
 
       print("payload + $payload");
 
@@ -272,7 +276,10 @@ class _PlanningPageState extends State<PlanningPage> {
   }
 
   Future<void> _showEmployeePicker() async {
-    await getEmployeeForAssistantRetreat();
+    filteredEmployee = await employeeService.getEmployeeForAssistantRetreat(
+      widget.ipValue,
+      employees,
+    );
     if (!mounted) return;
     if (errorMessage != '') {
       ScaffoldMessenger.of(
@@ -341,13 +348,13 @@ class _PlanningPageState extends State<PlanningPage> {
 
   String _formatDateTime(DateTime? dt) {
     if (dt == null) return 'Non selezionato';
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} '
+    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} '
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatDate(DateTime? dt) {
     if (dt == null) return 'Non selezionato';
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ';
+    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} ';
   }
 
   String _formatTime(DateTime? dt) {

@@ -33,11 +33,16 @@ class NavigatorService {
   static Future<void> goToRetreatPage({
     required String machineid,
     required String ipValue,
+    required int isTruckingOn,
   }) async {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder:
-            (context) => SelectDevice(machineid: machineid, ipValue: ipValue),
+            (context) => SelectDevice(
+              machineid: machineid,
+              ipValue: ipValue,
+              isTruckingOn: isTruckingOn,
+            ),
       ),
     );
   }
@@ -46,6 +51,8 @@ class NavigatorService {
     required String machineid,
     required String ipValue,
     required dynamic selectedDevice,
+    required int isTruckingOn,
+
   }) async {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
@@ -54,6 +61,7 @@ class NavigatorService {
               ipValue: ipValue,
               machineid: machineid,
               selectedDevice: selectedDevice,
+              isTruckingOn: isTruckingOn
             ),
       ),
     );

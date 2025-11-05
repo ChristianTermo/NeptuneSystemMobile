@@ -8,7 +8,7 @@ class SelectOperation extends StatefulWidget {
     super.key,
     required this.machineid,
     required this.ipValue,
-    required this.isTruckingOn
+    required this.isTruckingOn,
   });
 
   final String ipValue;
@@ -76,7 +76,7 @@ class SelectOperationState extends State<SelectOperation> {
               children: [
                 _buildMachineOption(
                   'Report',
-                  Icons.insert_chart_outlined, 
+                  Icons.insert_chart_outlined,
                   () => NavigatorService.goToEventsPage(
                     ipValue: widget.ipValue,
                     machineid: widget.machineid,
@@ -84,34 +84,50 @@ class SelectOperationState extends State<SelectOperation> {
                 ),
                 _buildMachineOption(
                   'Prelievi',
-                  Icons.assignment_return_outlined, 
+                  Icons.assignment_return_outlined,
                   () => NavigatorService.goToRetreatPage(
                     ipValue: widget.ipValue,
                     machineid: widget.machineid,
+                    isTruckingOn: widget.isTruckingOn
                   ),
                 ),
                 _buildMachineOption(
                   'Riavvio Macchina',
-                  Icons.restart_alt, 
-                  restartSystem,
-                ),
-                widget.isTruckingOn == 0 ?
-                _buildMachineOption(
-                   'Gestione macchina',
-                  Icons.settings,
-                  () => NavigatorService.goToSelectOperationPlanningPage(
-                    ipValue: widget.ipValue,
-                    machineid: widget.machineid,
-                  ),
-                ) :
-                _buildMachineOption(
-                   'Daimplementare',
-                  Icons.settings,
-                  () => NavigatorService.goToEventsPage(
-                    ipValue: widget.ipValue,
-                    machineid: widget.machineid,
+                  Icons.restart_alt,
+                  () => showDialog(
+                    context: context,
+                    builder:
+                        (context) => AlertDialog(
+                          title: const Text('Vuoi riavviare questa macchina?'),
+                          actions: [
+                            IconButton(
+                              onPressed: () async {
+                                await restartSystem();
+                                Navigator.pop(context);
+                              },
+                              icon: const Icon(Icons.check),
+                            ),
+                          ],
+                        ),
                   ),
                 ),
+                widget.isTruckingOn == 0
+                    ? _buildMachineOption(
+                      'Gestione macchina',
+                      Icons.settings,
+                      () => NavigatorService.goToSelectOperationPlanningPage(
+                        ipValue: widget.ipValue,
+                        machineid: widget.machineid,
+                      ),
+                    )
+                    : _buildMachineOption(
+                      'Registra utente',
+                      Icons.settings,
+                      () => NavigatorService.goToAddNewUserForm(
+                        ipValue: widget.ipValue,
+                        machineid: widget.machineid,
+                      ),
+                    ),
               ],
             ),
           ],

@@ -99,7 +99,7 @@ class _ReportPageState extends State<ReportPage> {
       ["EventType", "TimeStamp", "EmployeeId", "Device"],
     ];
 
-    for (var event in events) {
+    for (var event in filteredEvents) {
       rows.add([
         event["eventType"],
         event["eventTimeStamp"],
@@ -152,13 +152,13 @@ class _ReportPageState extends State<ReportPage> {
       } else {
         filteredEvents =
             events.where((event) {
-              return event['eventType'].toString().toLowerCase().contains(
+              return event['EventType'].toString().toLowerCase().contains(
                     query.toLowerCase(),
                   ) ||
-                  event['objectId'].toString().toLowerCase().contains(
+                  event['ObjectId'].toString().toLowerCase().contains(
                     query.toLowerCase(),
                   ) ||
-                  event['employee'].toString().toLowerCase().contains(
+                  event['Employee'].toString().toLowerCase().contains(
                     query.toLowerCase(),
                   );
             }).toList();
@@ -249,7 +249,7 @@ class _ReportPageState extends State<ReportPage> {
                     margin: EdgeInsets.all(8),
                     child: ListTile(
                       title: Text("Evento: $eventType"),
-                      subtitle: Text("Dispositivo: $objectId"),
+                      subtitle: Text(objectId),
                       trailing: Text(
                         "$formattedDate\nUtente: $employee",
                         textAlign: TextAlign.right,

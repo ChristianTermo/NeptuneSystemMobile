@@ -26,9 +26,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _loadMachines();
   }
 
-
   Future<void> _loadMachines() async {
     print("Ricarico la lista delle macchine...");
+    machinelist.clear();
 
     MachineService machineService = MachineService(database: widget.database);
 
@@ -44,7 +44,11 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     if (machinelist.length == 1) {
-      NavigatorService.goToManagementPage(machineid: machinelist.first.machineid, ipValue: machinelist.first.ip_address, isTruckingOn: machinelist.first.isTruckingOn);
+      NavigatorService.goToManagementPage(
+        machineid: machinelist.first.machineid,
+        ipValue: machinelist.first.ip_address,
+        isTruckingOn: machinelist.first.isTruckingOn,
+      );
     }
 
     print("machinelist: $machinelist");
@@ -128,14 +132,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                                           database:
                                                               widget.database,
                                                         );
-                                                    machineService
+                                                    await machineService
                                                         .deleteMachine(
                                                           machine.machineid,
                                                         );
+                                                        await _loadMachines();
                                                     Navigator.pop(context);
-                                                    await _loadMachines();
-                                                    setState(() {});
                                                   },
+
                                                   icon: const Icon(Icons.check),
                                                 ),
                                               ],
@@ -147,7 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         NavigatorService.goToManagementPage(
                                           machineid: machine.machineid,
                                           ipValue: machine.ip_address,
-                                          isTruckingOn: machine.isTruckingOn
+                                          isTruckingOn: machine.isTruckingOn,
                                         );
                                       },
 

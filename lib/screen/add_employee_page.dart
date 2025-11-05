@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:neptunesystem_mobile/screen/scan_code_page.dart';
+import 'package:neptunesystem_mobile/services/employee_service.dart';
 import 'package:uuid/uuid.dart';
 
 class AddEmployeePage extends StatefulWidget {
@@ -41,70 +43,11 @@ class AddEmployeePageState extends State<AddEmployeePage> {
   TextEditingController employeeNameController = TextEditingController();
   TextEditingController employeeBadgeCode = TextEditingController();
   TextEditingController roleController = TextEditingController();
+  EmployeeService employeeService = EmployeeService();
 
   bool isLoading = false;
   String errorMessage = '';
-
   Label? selectedRole;
-
-  Future<void> addNewEmployee() async {
-    try {
-      final httpCode;
-      final body;
-
-      Uuid uuid = Uuid();
-
-      final payload = [
-        {
-          "EmployeeId": uuid.v1(),
-          "EmployeeRole": roleController.text,
-          "EmployeeName": employeeNameController.text,
-          "EmployeeCard": employeeBadgeCode.text,
-        },
-      ];
-
-      print("planningId $payload");
-
-      print("payload + $payload");
-
-      final response = await http.post(
-        Uri.parse('${widget.ipValue}/Employee'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(payload),
-      );
-      httpCode = response.statusCode;
-      body = response.body;
-
-      print("📡 HTTP Codeaaa: $httpCode");
-
-      if (httpCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Operazione avvenuta con successo!')),
-        );
-      } else {
-        print(body);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Macchina non raggiungibile')));
-        setState(() {
-          errorMessage = "Macchina non raggiungibile";
-          isLoading = false;
-        });
-      }
-      Navigator.pop(context);
-    } catch (e) {
-      setState(() {
-        errorMessage = "Errore di connessione: $e";
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +77,28 @@ class AddEmployeePageState extends State<AddEmployeePage> {
               TextFormField(
                 controller: employeeBadgeCode,
                 autofocus: true,
-                decoration: InputDecoration(labelText: "codice badge utente"),
+                decoration: InputDecoration(
+                  labelText: "codice badge utente",
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.camera_alt),
+                    onPressed: () async {
+                      final code = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder:
+                              (_) => const ScanCodePage(
+                                allowDecimal: false,
+                                minDigits: 4,
+                              ),
+                          fullscreenDialog: true,
+                        ),
+                      );
+                      if (code != null) {
+                        employeeBadgeCode.text = code;
+                        debugPrint('Letto: $code');
+                      }
+                    },
+                  ),
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Compilare il campo codice badge utente';
@@ -144,18 +108,27 @@ class AddEmployeePageState extends State<AddEmployeePage> {
               ),
               DropdownMenu<Label>(
                 controller: roleController,
+                label: const Text('Ruolo utente'),
+                trailingIcon: const Icon(Icons.keyboard_arrow_down_rounded),
                 enableFilter: true,
                 requestFocusOnTap: true,
-                label: const Text('Ruolo utente'),
-                inputDecorationTheme: const InputDecorationTheme(
+                width: double.infinity,
+                menuHeight: 300,
+
+                inputDecorationTheme: InputDecorationTheme(
                   filled: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 5.0),
+                  fillColor: const Color(0xFFF5F7FA),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-                onSelected: (Label? role) {
-                  setState(() {
-                    selectedRole = role;
-                  });
-                },
+                onSelected:
+                    (Label? role) => setState(() => selectedRole = role),
                 dropdownMenuEntries: Label.entries,
               ),
             ],
@@ -165,9 +138,18 @@ class AddEmployeePageState extends State<AddEmployeePage> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'unique_add_machine_button',
         onPressed: () async {
-          await addNewEmployee();
+          Map<String, Object> response = await employeeService.addNewEmployee(
+            roleController.text,
+            employeeNameController.text,
+            employeeBadgeCode.text,
+            widget.ipValue,
+          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(response['response'].toString())));
+          Navigator.pop(context);
         },
-        label: const Text("Aggiungi la macchina"),
+        label: const Text("Aggiungi l'utente"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(
