@@ -37,7 +37,7 @@ class SelectEmployeeState extends State<SelectEmployee> {
     isLoading = true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-        employees = await employeeService.getEmployeeForAssistantRetreat(
+      employees = await employeeService.getEmployeeForAssistantRetreat(
         widget.ipValue,
         employees,
       );
@@ -146,6 +146,13 @@ class SelectEmployeeState extends State<SelectEmployee> {
               ? Center(
                 child: Text(
                   errorMessage,
+                  style: TextStyle(color: Colors.red, fontSize: 25),
+                ),
+              )
+              : employees.isEmpty
+              ? Center(
+                child: Text(
+                  "NESSUN UTENTE TROVATO",
                   style: TextStyle(color: Colors.red, fontSize: 25),
                 ),
               )

@@ -54,7 +54,6 @@ class ScanCodePageState extends State<ScanCodePage> {
         Navigator.pop(context, code);
       });
     }
-    code = "";
   }
 
   /// Estrae la “migliore” parte numerica dal testo OCR.

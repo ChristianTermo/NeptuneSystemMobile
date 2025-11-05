@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:neptunesystem_mobile/screen/select_employee.dart';
+import 'package:neptunesystem_mobile/services/device_service.dart';
 import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
 class SelectDevice extends StatefulWidget {
@@ -26,11 +27,22 @@ class SelectDeviceState extends State<SelectDevice> {
   bool isLoading = false;
   String errorMessage = '';
   TextEditingController searchController = TextEditingController();
+  DeviceService deviceService = DeviceService();
 
   @override
   void initState() {
     super.initState();
-    getDevices();
+    isLoading = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      devices = await deviceService.getDevices(widget.ipValue, devices);
+
+      setState(() {
+        filteredDevices = devices;
+        isLoading = false;
+      });
+
+      print("filteredDevices: $filteredDevices");
+    });
   }
 
   Future<void> getDevices() async {
@@ -141,6 +153,13 @@ class SelectDeviceState extends State<SelectDevice> {
                   style: TextStyle(color: Colors.red, fontSize: 25),
                 ),
               )
+              : devices.isEmpty
+              ? Center(
+                child: Text(
+                  "NESSUN DISPOSITIVO DISPONIBILE",
+                  style: TextStyle(color: Colors.red, fontSize: 20),
+                ),
+              )
               : ListView.builder(
                 itemCount: filteredDevices.length,
                 itemBuilder: (context, index) {
@@ -169,7 +188,7 @@ class SelectDeviceState extends State<SelectDevice> {
                             machineid: widget.machineid,
                             ipValue: widget.ipValue,
                             selectedDevice: device,
-                            isTruckingOn:  widget.isTruckingOn
+                            isTruckingOn: widget.isTruckingOn,
                           );
                         },
                         child: Text("Seleziona"),

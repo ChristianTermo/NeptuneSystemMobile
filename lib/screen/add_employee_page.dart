@@ -114,7 +114,6 @@ class AddEmployeePageState extends State<AddEmployeePage> {
                 requestFocusOnTap: true,
                 width: double.infinity,
                 menuHeight: 300,
-
                 inputDecorationTheme: InputDecorationTheme(
                   filled: true,
                   fillColor: const Color(0xFFF5F7FA),
@@ -138,16 +137,21 @@ class AddEmployeePageState extends State<AddEmployeePage> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'unique_add_machine_button',
         onPressed: () async {
-          Map<String, Object> response = await employeeService.addNewEmployee(
-            roleController.text,
-            employeeNameController.text,
-            employeeBadgeCode.text,
-            widget.ipValue,
-          );
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(response['response'].toString())));
-          Navigator.pop(context);
+          final validate = _formKey.currentState!.validate();
+          if (validate) {
+            Map<String, Object> response = await employeeService.addNewEmployee(
+              roleController.text,
+              employeeNameController.text,
+              employeeBadgeCode.text,
+              widget.ipValue,
+            );
+            if (response["status"] == 200) {
+              Navigator.pop(context);
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(response['response'].toString())),
+            );
+          }
         },
         label: const Text("Aggiungi l'utente"),
         backgroundColor: Colors.white,

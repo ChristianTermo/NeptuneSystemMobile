@@ -7,9 +7,6 @@ import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 
 class EmployeeService {
-  bool isLoading = false;
-  String errorMessage = '';
-
   Future<Map<String, Object>> addNewEmployee(
     String role,
     String employeeName,
@@ -32,8 +29,6 @@ class EmployeeService {
           "EmployeeCard": badge,
         },
       ];
-
-      print("planningId $payload");
 
       print("payload + $payload");
 
@@ -62,8 +57,9 @@ class EmployeeService {
           "response": 'Macchina non raggiungibile',
         };
       }
-    } catch (e) {}
-    return r = {"status": 500, "response": 'Macchina non raggiungibile'};
+    } catch (e) {
+      return r = {"status": 500, "response": 'Macchina non raggiungibile'};
+    }
   }
 
   Future<List<dynamic>> getEmployeeForAssistantRetreat(
