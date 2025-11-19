@@ -88,7 +88,7 @@ class SelectOperationState extends State<SelectOperation> {
                   () => NavigatorService.goToRetreatPage(
                     ipValue: widget.ipValue,
                     machineid: widget.machineid,
-                    isTruckingOn: widget.isTruckingOn
+                    isTruckingOn: widget.isTruckingOn,
                   ),
                 ),
                 _buildMachineOption(

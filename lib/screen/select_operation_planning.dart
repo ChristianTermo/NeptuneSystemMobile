@@ -48,17 +48,17 @@ class SelectOperationPlanningState extends State<SelectOperationPlanning> {
                   ),
                 ),
                 _buildMachineOption(
-                  'Registra utente',
+                  'Gestione utenti',
                   Icons.assignment_ind_outlined,
-                  () => NavigatorService.goToAddNewUserForm(
+                  () => NavigatorService.goToManageUserPage(
                     ipValue: widget.ipValue,
                     machineid: widget.machineid,
                   ),
                 ),
                 _buildMachineOption(
-                  'Registra auto',
+                  'Gestione dispositivi',
                   Icons.car_rental,
-                  () => NavigatorService.goToAddNewCarForm(
+                  () => NavigatorService.goToManageDevicePage(
                     ipValue: widget.ipValue,
                     machineid: widget.machineid,
                   ),

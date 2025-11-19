@@ -62,6 +62,102 @@ class EmployeeService {
     }
   }
 
+  Future<Map<String, Object>> updateEmployee(
+    String role,
+    String employeeName,
+    String badge,
+    String employeeId,
+    String ipValue,
+  ) async {
+    Map<String, Object> r;
+
+    try {
+      final httpCode;
+      final body;
+
+      final payload = {
+        "EmployeeId": employeeId,
+        "EmployeeRole": role,
+        "EmployeeName": employeeName,
+        "EmployeeCard": badge,
+      };
+
+      print("payload + $payload");
+
+      final response = await http.put(
+        Uri.parse('$ipValue/Employee'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      httpCode = response.statusCode;
+      body = response.body;
+
+      print("📡 HTTP Codeaaa: $httpCode");
+
+      if (httpCode == 200) {
+        return r = {
+          "status": httpCode,
+          "response": 'Operazione avvenuta con successo!',
+        };
+      } else {
+        print(body);
+        return r = {
+          "status": httpCode,
+          "response": 'Macchina non raggiungibile',
+        };
+      }
+    } catch (e) {
+      return r = {"status": 500, "response": 'Macchina non raggiungibile'};
+    }
+  }
+
+  Future<Map<String, Object>> deleteEmployee(
+    String ipValue,
+    String employeeId,
+  ) async {
+    Map<String, Object> r;
+
+    try {
+      final httpCode;
+      final body;
+
+      final payload = {"EmployeeId": employeeId};
+
+      print("payload + $payload");
+
+      final response = await http.delete(
+        Uri.parse('$ipValue/Employee'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      );
+      httpCode = response.statusCode;
+      body = response.body;
+
+      print("📡 HTTP Codeaaa: $httpCode");
+
+      if (httpCode == 200) {
+        return r = {
+          "status": httpCode,
+          "response": 'Operazione avvenuta con successo!',
+        };
+      } else {
+        print(body);
+        return r = {
+          "status": httpCode,
+          "response": 'Macchina non raggiungibile',
+        };
+      }
+    } catch (e) {
+      return r = {"status": 500, "response": 'Macchina non raggiungibile'};
+    }
+  }
+
   Future<List<dynamic>> getEmployeeForAssistantRetreat(
     String ipValue,
     List<dynamic> employees,

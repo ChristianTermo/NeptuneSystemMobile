@@ -6,22 +6,20 @@ import 'package:neptunesystem_mobile/screen/select_employee.dart';
 import 'package:neptunesystem_mobile/services/device_service.dart';
 import 'package:neptunesystem_mobile/services/navigator_service.dart';
 
-class SelectDevice extends StatefulWidget {
+class ManageDevice extends StatefulWidget {
   final String ipValue;
   final String machineid;
-  final int isTruckingOn;
 
-  const SelectDevice({
+  const ManageDevice({
     super.key,
     required this.ipValue,
     required this.machineid,
-    required this.isTruckingOn,
   });
   @override
-  State<StatefulWidget> createState() => SelectDeviceState();
+  State<StatefulWidget> createState() => ManageDeviceState();
 }
 
-class SelectDeviceState extends State<SelectDevice> {
+class ManageDeviceState extends State<ManageDevice> {
   List<dynamic> devices = [];
   List<dynamic> filteredDevices = [];
   bool isLoading = false;
@@ -34,7 +32,7 @@ class SelectDeviceState extends State<SelectDevice> {
     super.initState();
     isLoading = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      devices = await deviceService.getDevices(widget.ipValue, devices);
+      devices = await deviceService.getAllDevices(widget.ipValue, devices);
 
       setState(() {
         filteredDevices = devices;
@@ -45,14 +43,14 @@ class SelectDeviceState extends State<SelectDevice> {
     });
   }
 
-  void filterEvents(String query) {
+  void filterDevices(String query) {
     setState(() {
       if (query.isEmpty) {
         filteredDevices = devices;
       } else {
         filteredDevices =
             devices.where((event) {
-              return event['ObjectId'].toString().toLowerCase().contains(
+              return event['DeviceId'].toString().toLowerCase().contains(
                 query.toLowerCase(),
               );
             }).toList();
@@ -66,13 +64,25 @@ class SelectDeviceState extends State<SelectDevice> {
       appBar: AppBar(
         title: Text(widget.machineid),
         centerTitle: true,
+        actions: <Widget>[
+          IconButton(
+            onPressed:
+                () async => {
+                  NavigatorService.goToAddNewCarForm(
+                    machineid: widget.machineid,
+                    ipValue: widget.ipValue,
+                  ),
+                },
+            icon: const Icon(Icons.add),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(60),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             child: TextField(
               controller: searchController,
-              onChanged: filterEvents,
+              onChanged: filterDevices,
               decoration: InputDecoration(
                 hintText: "Cerca dispositivo...",
                 prefixIcon: Icon(Icons.search),
@@ -114,28 +124,49 @@ class SelectDeviceState extends State<SelectDevice> {
                       leading: CircleAvatar(
                         backgroundColor: Colors.grey[800],
                         child: Icon(
-                          Icons.person,
+                          Icons.car_rental,
                           color: Colors.white,
                         ), // Icona utente
                       ),
                       title: Text(
-                        "${device["ObjectId"]!} ${device["DeviceSize"] ?? 'N/A'}",
+                        "${device["DeviceId"]!}",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text(
-                        device['ExpirationDate'],
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          NavigatorService.goToSelectEmployeePage(
-                            machineid: widget.machineid,
-                            ipValue: widget.ipValue,
-                            selectedDevice: device,
-                            isTruckingOn: widget.isTruckingOn,
-                          );
-                        },
-                        child: Text("Seleziona"),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              NavigatorService.goToUpdateDeviceForm(
+                                machineid: widget.machineid,
+                                ipValue: widget.ipValue,
+                                device: device,
+                              );
+                            },
+                          ),
+                          SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () async {
+                              Map<String, Object> response = await deviceService
+                                  .deleteDevice(
+                                    widget.ipValue,
+                                    device["DeviceId"],
+                                  );
+                              if (response["status"] == 200) {
+                                Navigator.pop(context);
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    response['response'].toString(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   );

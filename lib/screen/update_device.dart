@@ -1,23 +1,27 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:neptunesystem_mobile/screen/scan_code_page.dart';
 import 'package:neptunesystem_mobile/services/device_service.dart';
 
-class AddCarPage extends StatefulWidget {
-  const AddCarPage({
+class UpdateDevice extends StatefulWidget {
+  const UpdateDevice({
     super.key,
     required this.machineid,
     required this.ipValue,
+    required this.device,
   });
 
   final String ipValue;
   final String machineid;
+  final dynamic device;
 
   @override
-  State<AddCarPage> createState() => AddCarPageState();
+  State<UpdateDevice> createState() => UpdateDeviceState();
 }
 
-class AddCarPageState extends State<AddCarPage> {
+class UpdateDeviceState extends State<UpdateDevice> {
   bool isLoading = false;
   String errorMessage = '';
   final _formKey = GlobalKey<FormState>();
@@ -25,17 +29,44 @@ class AddCarPageState extends State<AddCarPage> {
   List<dynamic> positionBusy = [];
   DeviceService deviceService = DeviceService();
   String code = "";
+  bool holder = false;
+  String deviceId = "";
+  TextEditingController deviceCodeController = TextEditingController();
+  TextEditingController drumController = TextEditingController();
+  TextEditingController sectorController = TextEditingController();
 
-  final TextEditingController deviceIdController = TextEditingController();
-  final TextEditingController deviceCodeController = TextEditingController();
-  final TextEditingController drumController = TextEditingController();
-  final TextEditingController sectorController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    deviceId = widget.device["DeviceId"];
+
+    deviceCodeController = TextEditingController(
+      text: widget.device["EcpCode"]?.toString() ?? "",
+    );
+    drumController = TextEditingController(
+      text: widget.device["DrumId"]?.toString() ?? "",
+    );
+    sectorController = TextEditingController(
+      text: widget.device["SectorId"]?.toString() ?? "",
+    );
+    holder = widget.device["Holder"];
+
+    print(widget.device);
+  }
+
+  @override
+  void dispose() {
+    deviceCodeController.dispose();
+    drumController.dispose();
+    sectorController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registra un veicolo'),
+        title: Text('Aggiorna il dispositivo $deviceId'),
         centerTitle: true,
       ),
       body: Padding(
@@ -46,22 +77,10 @@ class AddCarPageState extends State<AddCarPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               TextFormField(
-                controller: deviceIdController,
-                autofocus: true,
-                decoration: InputDecoration(labelText: "Id del veicolo"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Compilare il campo id del veicolo';
-                  }
-                  return null;
-                },
-              ),
-
-              TextFormField(
                 controller: deviceCodeController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  labelText: "Codice veicolo",
+                  labelText: "Codice dispositivo",
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.camera_alt),
                     onPressed: () async {
@@ -89,7 +108,6 @@ class AddCarPageState extends State<AddCarPage> {
                   return null;
                 },
               ),
-
               TextFormField(
                 controller: drumController,
                 keyboardType: TextInputType.number,
@@ -118,6 +136,25 @@ class AddCarPageState extends State<AddCarPage> {
                   return null;
                 },
               ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Presente nel distributore",
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Switch(
+                    value: holder,
+                    activeColor: Colors.deepPurple,
+                    onChanged: (bool value) {
+                      setState(() {
+                        holder = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -127,12 +164,13 @@ class AddCarPageState extends State<AddCarPage> {
         onPressed: () async {
           bool validate = _formKey.currentState!.validate();
           if (validate) {
-            Map<String, Object> response = await deviceService.addNewCar(
+            Map<String, Object> response = await deviceService.updateDevice(
               widget.ipValue,
-              deviceIdController.text,
+              widget.device["DeviceId"],
               deviceCodeController.text,
               int.parse(drumController.text),
               int.parse(sectorController.text),
+              holder,
             );
             if (response["status"] == 200) {
               Navigator.pop(context);
@@ -143,7 +181,7 @@ class AddCarPageState extends State<AddCarPage> {
             code = "";
           }
         },
-        label: const Text("Aggiungi la macchina"),
+        label: const Text("Aggiorna il dispositivo"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(

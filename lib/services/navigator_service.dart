@@ -4,6 +4,8 @@ import 'package:neptunesystem_mobile/screen/add_car_page.dart';
 import 'package:neptunesystem_mobile/screen/add_employee_page.dart';
 import 'package:neptunesystem_mobile/screen/add_planning_page.dart';
 import 'package:neptunesystem_mobile/screen/home.dart';
+import 'package:neptunesystem_mobile/screen/manage_device.dart';
+import 'package:neptunesystem_mobile/screen/manage_user.dart';
 import 'package:neptunesystem_mobile/screen/report_page.dart';
 import 'package:neptunesystem_mobile/screen/add_machine_form.dart';
 import 'package:neptunesystem_mobile/screen/report_planning_page.dart';
@@ -12,6 +14,8 @@ import 'package:neptunesystem_mobile/screen/select_device.dart';
 import 'package:neptunesystem_mobile/screen/select_employee.dart';
 import 'package:neptunesystem_mobile/main.dart';
 import 'package:neptunesystem_mobile/screen/select_operation_planning.dart';
+import 'package:neptunesystem_mobile/screen/update_device.dart';
+import 'package:neptunesystem_mobile/screen/update_user.dart';
 import 'package:sqflite/sqflite.dart';
 
 class NavigatorService {
@@ -52,7 +56,6 @@ class NavigatorService {
     required String ipValue,
     required dynamic selectedDevice,
     required int isTruckingOn,
-
   }) async {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
@@ -61,7 +64,7 @@ class NavigatorService {
               ipValue: ipValue,
               machineid: machineid,
               selectedDevice: selectedDevice,
-              isTruckingOn: isTruckingOn
+              isTruckingOn: isTruckingOn,
             ),
       ),
     );
@@ -159,7 +162,10 @@ class NavigatorService {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder:
-            (context) => AddCarPage(ipValue: ipValue, machineid: machineid),
+            (context) => AddCarPage(
+              ipValue: ipValue,
+              machineid: machineid,
+            ),
       ),
     );
   }
@@ -171,8 +177,74 @@ class NavigatorService {
     navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder:
-            (context) =>
-                AddEmployeePage(ipValue: ipValue, machineid: machineid),
+            (context) => AddEmployeePage(
+              ipValue: ipValue,
+              machineid: machineid,
+            ),
+      ),
+    );
+  }
+
+  static Future<void> goToUpdateDeviceForm({
+    required String machineid,
+    required String ipValue,
+    required dynamic device,
+  }) async {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder:
+            (context) => UpdateDevice(
+              ipValue: ipValue,
+              machineid: machineid,
+              device: device,
+            ),
+      ),
+    );
+  }
+
+  static Future<void> goToUpdateUserForm({
+    required String machineid,
+    required String ipValue,
+    required dynamic employee,
+  }) async {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder:
+            (context) => UpdateUser(
+              ipValue: ipValue,
+              machineid: machineid,
+              employee: employee,
+            ),
+      ),
+    );
+  }
+
+  static Future<void> goToManageDevicePage({
+    required String machineid,
+    required String ipValue,
+  }) async {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder:
+            (context) => ManageDevice(
+              ipValue: ipValue,
+              machineid: machineid,
+            ),
+      ),
+    );
+  }
+
+  static Future<void> goToManageUserPage({
+    required String machineid,
+    required String ipValue,
+  }) async {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder:
+            (context) => ManageUser(
+              ipValue: ipValue,
+              machineid: machineid,
+            ),
       ),
     );
   }

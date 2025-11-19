@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:neptunesystem_mobile/services/planning_service.dart';
 
 class ReportPlanningPage extends StatefulWidget {
   final String ipValue;
@@ -24,11 +25,22 @@ class _ReportPlanningPageState extends State<ReportPlanningPage> {
   List<List<dynamic>> rows = [];
   bool isLoading = false;
   String errorMessage = '';
+  PlanningService planningService = PlanningService();
 
   @override
   void initState() {
     super.initState();
-    getPlanning();
+    isLoading = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      plannings = await planningService.getPlanning(widget.ipValue);
+
+      setState(() {
+        filteredPlanning = plannings;
+        isLoading = false;
+      });
+
+      print("filteredDevices: $filteredPlanning");
+    });
   }
 
   Future<void> getPlanning() async {
@@ -150,16 +162,20 @@ class _ReportPlanningPageState extends State<ReportPlanningPage> {
                   style: TextStyle(color: Colors.red, fontSize: 25),
                 ),
               )
+              : plannings.isEmpty
+              ? Center(
+                child: Text(
+                  "NESSUNA PRENOTAZIONE PRESENTE",
+                  style: TextStyle(color: Colors.red, fontSize: 20),
+                ),
+              )
               : ListView.builder(
                 itemCount: filteredPlanning.length,
                 itemBuilder: (context, index) {
                   final planning = filteredPlanning[index];
-
                   String deviceId = planning['DeviceId'] ?? 'N/A';
                   String planningDate = planning['PlanningDate'] ?? 'N/A';
-                  //String objectId = planning['Emplo'] ?? 'N/A';
                   String employee = planning['EmployeeId'] ?? 'N/A';
-
                   return Card(
                     margin: EdgeInsets.all(8),
                     child: ListTile(
@@ -182,6 +198,7 @@ class _ReportPlanningPageState extends State<ReportPlanningPage> {
                                     onPressed: () async {
                                       await deletePlanning(planning);
                                       setState(initState);
+                                      Navigator.pop(context);
                                     },
                                     icon: const Icon(Icons.check),
                                   ),

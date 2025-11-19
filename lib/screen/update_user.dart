@@ -5,20 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:neptunesystem_mobile/screen/scan_code_page.dart';
 import 'package:neptunesystem_mobile/services/employee_service.dart';
+import 'package:neptunesystem_mobile/services/navigator_service.dart';
 import 'package:uuid/uuid.dart';
 
-class AddEmployeePage extends StatefulWidget {
-  const AddEmployeePage({
+class UpdateUser extends StatefulWidget {
+  const UpdateUser({
     super.key,
     required this.machineid,
     required this.ipValue,
+    required this.employee,
   });
 
   final String ipValue;
   final String machineid;
+  final dynamic employee;
 
   @override
-  State<StatefulWidget> createState() => AddEmployeePageState();
+  State<StatefulWidget> createState() => UpdateUserState();
 }
 
 typedef LabelEntry = DropdownMenuEntry<Label>;
@@ -38,7 +41,7 @@ enum Label {
   );
 }
 
-class AddEmployeePageState extends State<AddEmployeePage> {
+class UpdateUserState extends State<UpdateUser> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController employeeNameController = TextEditingController();
   TextEditingController employeeBadgeCode = TextEditingController();
@@ -50,10 +53,33 @@ class AddEmployeePageState extends State<AddEmployeePage> {
   Label? selectedRole;
 
   @override
+  void initState() {
+    super.initState();
+    employeeNameController = TextEditingController(
+      text: widget.employee["EmployeeName"]?.toString() ?? "",
+    );
+    employeeBadgeCode = TextEditingController(
+      text: widget.employee["EmployeeCard"]?.toString() ?? "",
+    );
+    roleController = TextEditingController(
+      text: widget.employee["EmployeeRole"]?.toString() ?? "",
+    );
+    print(widget.employee);
+  }
+
+  @override
+  void dispose() {
+    employeeNameController.dispose();
+    employeeBadgeCode.dispose();
+    roleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registra un utente'),
+        title: Text('Aggiorna utente ${widget.employee["EmployeeName"]}'),
         centerTitle: true,
       ),
       body: Padding(
@@ -67,7 +93,7 @@ class AddEmployeePageState extends State<AddEmployeePage> {
                   padding: const EdgeInsets.all(24),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
-                      maxWidth: 600, // Forma elegante su tablet/desktop
+                      maxWidth: 600, 
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -160,21 +186,25 @@ class AddEmployeePageState extends State<AddEmployeePage> {
         onPressed: () async {
           final validate = _formKey.currentState!.validate();
           if (validate) {
-            Map<String, Object> response = await employeeService.addNewEmployee(
+            Map<String, Object> response = await employeeService.updateEmployee(
               roleController.text,
               employeeNameController.text,
               employeeBadgeCode.text,
+              widget.employee["EmployeeId"],
               widget.ipValue,
             );
             if (response["status"] == 200) {
-              Navigator.pop(context);
+              NavigatorService.goToManageUserPage(
+                machineid: widget.machineid,
+                ipValue: widget.ipValue,
+              );
             }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(response['response'].toString())),
             );
           }
         },
-        label: const Text("Aggiungi l'utente"),
+        label: const Text("Aggiorna l'utente"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(
