@@ -244,6 +244,7 @@ class _ReportPageState extends State<ReportPage> {
                   String eventType = event['EventType'] ?? 'N/A';
                   String objectId = event['ObjectId'] ?? 'N/A';
                   String employee = event['Employee'] ?? 'N/A';
+                  String note = event['Note'] ?? 'N/A';
 
                   return Card(
                     margin: EdgeInsets.all(8),
@@ -251,7 +252,7 @@ class _ReportPageState extends State<ReportPage> {
                       title: Text("Evento: $eventType"),
                       subtitle: Text(objectId),
                       trailing: Text(
-                        "$formattedDate\nUtente: $employee",
+                        "$formattedDate\nUtente: $employee\n$note",
                         textAlign: TextAlign.right,
                       ),
                     ),
